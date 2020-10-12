@@ -56,7 +56,11 @@ class FtpPayload:
 		ret = struct.pack("<HBBBBBBI", self.seq, self.session, self.opcode, self.size, self.req_opcode, self.burst_complete, 0, self.offset)
 		if self.payload is not None:
 			ret += self.payload
+		remainder_length = MAX_Payload - len(ret) + 12
+		if remainder_length > 0:
+			ret += bytearray([0] * remainder_length)
 		ret = bytearray(ret)
+		print(len(ret))
 		return ret
 
 	def __str__(self):
