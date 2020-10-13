@@ -140,11 +140,16 @@ def msg_open_file_wo():
 	file = [ord(c) for c in '/main.lua']
 	return msg_ftp(FtpPayload(1, 0, OP_OpenFileWO, len(file), 0, 1, 0, bytearray(file)))
 
+def msg_open_file_ro():
+	file = [ord(c) for c in '/main.lua']
+	return msg_ftp(FtpPayload(1, 0, OP_OpenFileRO, len(file), 0, 1, 0, bytearray(file)))
 
 def msg_write_file():
-	file = [ord(c) for c in '/main.lua']
-	return msg_ftp(FtpPayload(1, 0, OP_WriteFile, len(file), 0, 1, 0, bytearray(file)))
+	file_payload = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+	return msg_ftp(FtpPayload(1, 0, OP_WriteFile, len(file_payload), 0, 1, 0, bytearray(file_payload)))
 
+def msg_read_file():
+	return msg_ftp(FtpPayload(1, 0, OP_ReadFile, 7, 128, 1, 0, bytearray([])))
 
 def wait_for_message(response_msgid, seconds=4):
 	time_end = datetime.datetime.now() + datetime.timedelta(seconds)
@@ -169,11 +174,25 @@ def ftp_write_file():
 	if msgin is not None:
 		print_ftp(msgin)
 
-	# send(msg_write_file())
-	# msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
-	# if msgin is not None:
-	# 	print_ftp(msgin)
+	send(msg_write_file())
+	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
+	if msgin is not None:
+		print_ftp(msgin)
+
+
+def ftp_read_file():
+	send(msg_open_file_ro())
+	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
+	if msgin is not None:
+		print_ftp(msgin)
+
+	send(msg_read_file())
+	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
+	if msgin is not None:
+		print_ftp(msgin)
 
 
 if __name__ == "__main__":
-	ftp_write_file()
+	# ftp_write_file()
+	# ftp_read_file()
+	# ftp_list()
