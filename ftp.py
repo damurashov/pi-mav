@@ -60,7 +60,6 @@ class FtpPayload:
 		if remainder_length > 0:
 			ret += bytearray([0] * remainder_length)
 		ret = bytearray(ret)
-		print(len(ret))
 		return ret
 
 	def __str__(self):
@@ -99,7 +98,9 @@ def heartbeat():
 		# print(msg_heartbeat.pack(mav))
 		send(msg_heartbeat.pack(mav))
 
+
 heartbeat.timelast = datetime.datetime.now()
+
 
 
 def ftp_list():
@@ -128,31 +129,51 @@ def ftp_list():
 			# print(sys.exc_info()[0])
 			pass
 
-def ftp_write_file():
-	file = [ord(c) for c in '/main.lua']
-	payload = FtpPayload(1, 0, OP_OpenFileWO, len(file), 0, 1, 0, bytearray(file))
-	print(payload.pack())
+
+def msg_ftp(payload: FtpPayload):
 	msg = mav.file_transfer_protocol_encode(0, 0, 0, payload.pack())
-
 	msg = msg.pack(mav)
+	return msg
 
-	send(msg)
-	msgin = mav.parse_char(sock.recv(300))
-	if msgin is not None and msgin.get_msgId() == mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
-		print(msgin)
-		payload = msgin.get_payload()
-		payload = list(payload)
-		payload = [f"{chr(i)}" for i in payload]
-		print(payload)
-		return
-	time.sleep(0.5)
+
+def msg_open_file_wo():
+	file = [ord(c) for c in '/main.lua']
+	return msg_ftp(FtpPayload(1, 0, OP_OpenFileWO, len(file), 0, 1, 0, bytearray(file)))
+
+
+def msg_write_file():
+	file = [ord(c) for c in '/main.lua']
+	return msg_ftp(FtpPayload(1, 0, OP_WriteFile, len(file), 0, 1, 0, bytearray(file)))
+
+
+def wait_for_message(response_msgid, seconds=4):
+	time_end = datetime.datetime.now() + datetime.timedelta(seconds)
+	while datetime.datetime.now() < time_end:
+		heartbeat()
+		msgin = mav.parse_char(sock.recv(300))
+		if msgin is not None and msgin.get_msgId() == response_msgid:
+			return msgin
+	return None
+
+
+def print_ftp(msgin):
+	print(msgin)
+	payload = list(msgin.get_payload())
+	payload = [f"{chr(i)}" for i in payload]
+	print(payload[16:])
+
+
+def ftp_write_file():
+	send(msg_open_file_wo())
+	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
+	if msgin is not None:
+		print_ftp(msgin)
+
+	# send(msg_write_file())
+	# msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
+	# if msgin is not None:
+	# 	print_ftp(msgin)
 
 
 if __name__ == "__main__":
 	ftp_write_file()
-	while True:
-		try:
-			# heartbeat()
-			ftp_write_file()
-		except:
-			pass
