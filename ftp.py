@@ -1,7 +1,5 @@
-import socket
 from pymavlink.dialects.v20 import common as mavcommon
-from pymavlink import mavutil
-import datetime
+from common import *
 import time
 import struct
 
@@ -79,28 +77,6 @@ class FtpPayload:
 		return ret
 
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-veh_addr = ("192.168.4.1", 8001)
-mav = mavcommon.MAVLink(None)
-mavconn = mavutil.mavudp('localhost:10000')
-
-def send(msg):
-	# sock.sendto(bytes(str(msg), "UTF-8"), veh_addr)
-	# mavconn.write(msg)
-	sock.sendto(msg, veh_addr)
-
-
-def heartbeat():
-	if datetime.datetime.now() - heartbeat.timelast > datetime.timedelta(seconds=1):
-		heartbeat.timelast = datetime.datetime.now()
-		msg_heartbeat = mav.heartbeat_encode(mavcommon.MAV_TYPE_GCS, mavcommon.MAV_AUTOPILOT_PX4, 0, 0,
-											 mavcommon.MAV_STATE_ACTIVE)
-		# print(msg_heartbeat.pack(mav))
-		send(msg_heartbeat.pack(mav))
-
-
-heartbeat.timelast = datetime.datetime.now()
-
 
 
 def ftp_list():
@@ -140,25 +116,19 @@ def msg_open_file_wo():
 	file = [ord(c) for c in '/main.lua']
 	return msg_ftp(FtpPayload(1, 0, OP_OpenFileWO, len(file), 0, 1, 0, bytearray(file)))
 
+
 def msg_open_file_ro():
 	file = [ord(c) for c in '/main.lua']
 	return msg_ftp(FtpPayload(1, 0, OP_OpenFileRO, len(file), 0, 1, 0, bytearray(file)))
 
-def msg_write_file():
-	file_payload = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
+
+def msg_write_file(nbytes=4):
+	file_payload = [i for i in range(1,nbytes+1)]
 	return msg_ftp(FtpPayload(1, 0, OP_WriteFile, len(file_payload), 0, 1, 0, bytearray(file_payload)))
+
 
 def msg_read_file():
 	return msg_ftp(FtpPayload(1, 0, OP_ReadFile, 7, 128, 1, 0, bytearray([])))
-
-def wait_for_message(response_msgid, seconds=4):
-	time_end = datetime.datetime.now() + datetime.timedelta(seconds)
-	while datetime.datetime.now() < time_end:
-		heartbeat()
-		msgin = mav.parse_char(sock.recv(300))
-		if msgin is not None and msgin.get_msgId() == response_msgid:
-			return msgin
-	return None
 
 
 def print_ftp(msgin):
@@ -168,13 +138,13 @@ def print_ftp(msgin):
 	print(payload[16:])
 
 
-def ftp_write_file():
+def ftp_write_file(nbytes=4):
 	send(msg_open_file_wo())
 	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
 	if msgin is not None:
 		print_ftp(msgin)
 
-	send(msg_write_file())
+	send(msg_write_file(nbytes))
 	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
 	if msgin is not None:
 		print_ftp(msgin)
@@ -192,7 +162,3 @@ def ftp_read_file():
 		print_ftp(msgin)
 
 
-if __name__ == "__main__":
-	# ftp_write_file()
-	# ftp_read_file()
-	# ftp_list()
