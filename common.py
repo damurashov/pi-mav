@@ -27,23 +27,26 @@ def wait_for_message(response_msgids=None, seconds=4, n_max_messages=2, do_print
 	time_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 	n_messages = 0
 	while datetime.datetime.now() < time_end:
-		heartbeat()
-		msgin = mav.parse_char(sock.recv(300))
-		# if msgin is not None and msgin.get_msgId() == response_msgid:
-		# 	return msgin
-		if msgin is not None:
-			if response_msgids is None:
-				n_messages += 1
-				if do_print:
-					print(msgin)
-				else:
-					return msgin
-			elif msgin.get_msgId() in response_msgids:
-				n_messages += 1
-				if do_print:
-					print(msgin)
-				else:
-					return msgin
+		try:
+			heartbeat()
+			msgin = mav.parse_char(sock.recv(300))
+			# if msgin is not None and msgin.get_msgId() == response_msgid:
+			# 	return msgin
+			if msgin is not None:
+				if response_msgids is None:
+					n_messages += 1
+					if do_print:
+						print(msgin)
+					else:
+						return msgin
+				elif msgin.get_msgId() in response_msgids:
+					n_messages += 1
+					if do_print:
+						print(msgin)
+					else:
+						return msgin
+		except:
+			pass
 	return None
 
 
