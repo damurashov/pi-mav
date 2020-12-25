@@ -2,6 +2,7 @@ import socket
 from pymavlink.dialects.v20 import common as mavcommon
 from pymavlink import mavutil
 import datetime
+import threading
 import time
 import struct
 
@@ -49,8 +50,10 @@ def wait_for_message(response_msgids=None, seconds=4, n_max_messages=2, do_print
 			pass
 	return None
 
-
+lock = threading.Lock()
 def send(msg):
 	# sock.sendto(bytes(str(msg), "UTF-8"), veh_addr)
 	# mavconn.write(msg)
+	lock.acquire()
 	sock.sendto(msg, veh_addr)
+	lock.release()

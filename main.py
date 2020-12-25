@@ -4,11 +4,33 @@ from generic import *
 import serial
 import time
 
+
+def thr():
+	while True:
+		rc_channels_override()
+		heartbeat()
+		time.sleep(0.2)
+
+
+t = threading.Thread(target=thr, args=())
+
+
+def wait_response(seconds):
+	wait_for_message((mavcommon.MAVLINK_MSG_ID_NAMED_VALUE_INT, mavcommon.MAVLINK_MSG_ID_COMMAND_ACK,), do_print=True, seconds=seconds)
+
+
 if __name__ == "__main__":
-	# while True:
-	# 	wait_for_message((mavcommon.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED,), do_print=True)
-	command_arm(False)
-	wait_for_message((mavcommon.MAVLINK_MSG_ID_NAMED_VALUE_INT, mavcommon.MAVLINK_MSG_ID_COMMAND_ACK,), do_print=True, seconds=4)
-	# command_takeoff()
-	# wait_for_message((mavcommon.MAVLINK_MSG_ID_NAMED_VALUE_INT, mavcommon.MAVLINK_MSG_ID_COMMAND_ACK,), do_print=True, seconds=4)
-	# wait_for_message((mavcommon.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, ), do_print=True, seconds=4)
+	t.start()
+	time.sleep(1)
+
+	command_arm(True)
+	wait_response(2)
+
+	command_takeoff()
+	wait_response(10)
+
+	set_position_target_local_ned()
+	wait_response(10)
+
+	command_land()
+	wait_response(10)
