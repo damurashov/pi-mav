@@ -5,11 +5,15 @@ import datetime
 import threading
 import time
 import struct
+import select
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-veh_addr = ("192.168.4.1", 8001)
+# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+veh_addr = ("127.0.0.1", 8000)
+sock.connect(veh_addr)
+sock.setblocking(0)
 mav = mavcommon.MAVLink(None)
-mavconn = mavutil.mavudp('localhost:10000')
+# mavconn = mavutil.mavudp('localhost:10000')
 
 
 def heartbeat():
@@ -28,27 +32,20 @@ def wait_for_message(response_msgids=None, seconds=4, n_max_messages=2, do_print
 	time_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 	n_messages = 0
 	while datetime.datetime.now() < time_end:
-		try:
-			heartbeat()
+		ready = select.select([sock], [], [], seconds/10.0)
+		if ready[0]:
 			msgin = mav.parse_char(sock.recv(300))
-			# if msgin is not None and msgin.get_msgId() == response_msgid:
-			# 	return msgin
 			if msgin is not None:
 				if response_msgids is None:
-					n_messages += 1
 					if do_print:
 						print(msgin)
 					else:
 						return msgin
 				elif msgin.get_msgId() in response_msgids:
-					n_messages += 1
 					if do_print:
 						print(msgin)
 					else:
 						return msgin
-		except:
-			pass
-	return None
 
 lock = threading.Lock()
 def send(msg):
