@@ -34,18 +34,21 @@ def wait_for_message(response_msgids=None, seconds=4, n_max_messages=2, do_print
 	while datetime.datetime.now() < time_end:
 		ready = select.select([sock], [], [], seconds/10.0)
 		if ready[0]:
-			msgin = mav.parse_char(sock.recv(300))
-			if msgin is not None:
-				if response_msgids is None:
-					if do_print:
-						print(msgin)
-					else:
-						return msgin
-				elif msgin.get_msgId() in response_msgids:
-					if do_print:
-						print(msgin)
-					else:
-						return msgin
+			try:
+				msgin = mav.parse_char(sock.recv(300))
+				if msgin is not None:
+					if response_msgids is None:
+						if do_print:
+							print(msgin)
+						else:
+							return msgin
+					elif msgin.get_msgId() in response_msgids:
+						if do_print:
+							print(msgin)
+						else:
+							return msgin
+			except mavcommon.MAVError:
+				pass
 
 lock = threading.Lock()
 def send(msg):
