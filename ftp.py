@@ -50,7 +50,10 @@ class FtpPayload:
 		self.payload = payload
 
 	@staticmethod
-	def unpack(ftp_payload):
+	def construct_from_bytes(ftp_payload):
+		if type(ftp_payload) is mavcommon.MAVLink_file_transfer_protocol_message:
+			ftp_payload = ftp_payload.get_payload()
+
 		ftp_payload = bytearray(ftp_payload[7:])
 		ret = struct.unpack("<HBBBBBxI", ftp_payload[0:12])
 
@@ -60,7 +63,9 @@ class FtpPayload:
 
 		ret = ret + (ftp_payload,)
 		ret = FtpPayload(*ret)
+
 		print(ret)
+		return ret
 
 	def pack(self):
 		'''pack message'''
@@ -173,3 +178,6 @@ def ftp_read_file():
 	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
 	if msgin is not None:
 		print_ftp(msgin)
+
+def wait_for_ftp_message(seconds=4, do_print=False):
+	wait_for_message((mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds, do_print)
