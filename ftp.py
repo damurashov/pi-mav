@@ -49,6 +49,19 @@ class FtpPayload:
 		self.offset = offset
 		self.payload = payload
 
+	@staticmethod
+	def unpack(ftp_payload):
+		ftp_payload = bytearray(ftp_payload[7:])
+		ret = struct.unpack("<HBBBBBxI", ftp_payload[0:12])
+
+		# Extract ftp payload (data field)
+		ftp_payload = ftp_payload[12:]
+		ftp_payload = ftp_payload[:ret[3]]
+
+		ret = ret + (ftp_payload,)
+		ret = FtpPayload(*ret)
+		print(ret)
+
 	def pack(self):
 		'''pack message'''
 		ret = struct.pack("<HBBBBBBI", self.seq, self.session, self.opcode, self.size, self.req_opcode, self.burst_complete, 0, self.offset)
@@ -112,8 +125,8 @@ def msg_ftp(payload: FtpPayload):
 	return msg
 
 
-def msg_open_file_wo():
-	file = [ord(c) for c in '/main.lua']
+def msg_open_file_wo(filename: str):
+	file = [ord(c) for c in filename]
 	return msg_ftp(FtpPayload(1, 0, OP_OpenFileWO, len(file), 0, 1, 0, bytearray(file)))
 
 
@@ -160,5 +173,3 @@ def ftp_read_file():
 	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
 	if msgin is not None:
 		print_ftp(msgin)
-
-

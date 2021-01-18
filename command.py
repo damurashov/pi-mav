@@ -34,14 +34,16 @@ def command_land():
 	send(msg_land())
 
 
-def command_lua_run():
-	send(msg_lua(LUA_PARAM_1_RUN))
+def command_lua_run(run: bool):
+	msg = mav.command_long_encode(1, 25, mavcommon.MAV_CMD_COMPONENT_ARM_DISARM, 0, int(run), 0, 0, 0, 0, 0, 0).pack(mav)
+	send(msg)
 
 
 def command_arm(arm: bool):
 	send(msg_rc_channels_override())
 	time.sleep(0.001)
 	send(msg_arm(arm))
+
 
 def command_takeoff():
 	send(msg_takeoff())
