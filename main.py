@@ -23,12 +23,16 @@ if __name__ == "__main__":
 	# t.start()
 	# time.sleep(2)
 
+	time.sleep(1)
+
 	command_arm(True)
-	wait_response(2)
+	wait_response(5)
 
 	command_takeoff()
-	wait_response(10)
+	wait_response(30)
 
+	set_position_target_local_ned()
+	wait_response(30)
 
 	command_land()
 	wait_response(30)

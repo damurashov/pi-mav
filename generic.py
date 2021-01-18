@@ -11,7 +11,13 @@ def msg_set_position_target_local_ned():
 def set_position_target_local_ned():
     send(msg_set_position_target_local_ned())
 
+
 def rc_channels_override():
-    msg = mav.rc_channels_override_encode(0, 0, 1500, 1500, 1500, 1500, 2000, 2000, 0, 0)
+    msg = mav.rc_channels_override_encode(0, 0, 1500, 1500, 1500, 1500, 2000, 2000, 1, 0)
     msg = msg.pack(mav)
+    send(msg)
+
+
+def set_enable_lua(f: bool):
+    msg = mav.rc_channels_override_encode(0, 0, 0, 0, 0, 0, 0, 0, int(f)).pack(mav)
     send(msg)
