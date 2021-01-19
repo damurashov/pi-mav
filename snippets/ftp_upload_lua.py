@@ -1,5 +1,6 @@
 import ftp
 import common
+import time
 
 
 def lua_file_to_bytes(filename="nice_color.lua"):
@@ -8,7 +9,11 @@ def lua_file_to_bytes(filename="nice_color.lua"):
 
 
 def _wait_ftp_response(seconds = 10, do_print=False):
-    m = common.wait_for_message((common.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds, do_print)
+    m = common.wait_for_message((common.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=seconds)
+    if m is not None:
+        m = ftp.FtpPayload.construct_from_bytes(m.get_payload())
+    print(m)
+    return m
 
 
 def test():
@@ -31,15 +36,17 @@ def open_session(filename='/main.lua') -> int:
 
 
 def write_chunk(sid, offset, chunk: bytearray):
-    # Pack and send
-    msg = ftp.FtpPayload(42, sid, ftp.OP_WriteFile, len(chunk), 0, 0, offset, chunk)
-    msg = ftp.msg_ftp(msg)
-    common.send(msg)
+    while True:
+        # Pack and send
+        common.send(ftp.msg_write_file(sid, offset, chunk))
 
-    # Wait response
-    msg = _wait_ftp_response(10)
-    assert msg is not None
-    assert msg.opcode == ftp.OP_Ack
+        # Wait response
+        msg = _wait_ftp_response(20)
+        if msg is None:
+            continue
+
+        if msg.opcode == ftp.OP_Ack:
+            break
 
     return
 
@@ -49,8 +56,10 @@ if __name__ == "__main__":
     file = lua_file_to_bytes()
 
     offset = 0
-    while len(bytes) != 0:
-        chunk = file[:ftp.MAX_Payload]
-        file = file[ftp.MAX_Payload:]
+    while len(file) != 0:
+        # chunk = file[:ftp.MAX_Payload]
+        # file = file[ftp.MAX_Payload:]
+        chunk = file[:100]
+        file = file[100:]
         write_chunk(sid, offset, chunk)
         offset += len(chunk)

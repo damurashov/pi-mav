@@ -76,6 +76,7 @@ class FtpPayload:
 		if remainder_length > 0:
 			ret += bytearray([0] * remainder_length)
 		ret = bytearray(ret)
+		print(len(ret))
 		return ret
 
 	def __str__(self):
@@ -140,9 +141,14 @@ def msg_open_file_ro():
 	return msg_ftp(FtpPayload(1, 0, OP_OpenFileRO, len(file), 0, 1, 0, bytearray(file)))
 
 
-def msg_write_file(nbytes=4):
-	file_payload = [i for i in range(1,nbytes+1)]
-	return msg_ftp(FtpPayload(1, 0, OP_WriteFile, len(file_payload), 0, 1, 0, bytearray(file_payload)))
+# def msg_write_file(*args):
+# 	nbytes = 4
+# 	file_payload = [i for i in range(1,nbytes+1)]
+# 	return msg_ftp(FtpPayload(1, 0, OP_WriteFile, len(file_payload), 0, 1, 0, bytearray(file_payload)))
+
+
+def msg_write_file(sid, offset, chunk):
+	return msg_ftp(FtpPayload(1, int(sid), OP_WriteFile, len(chunk), 0, 1, int(offset), bytearray(chunk)))
 
 
 def msg_read_file():
