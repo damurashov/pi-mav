@@ -64,7 +64,7 @@ class FtpPayload:
 		ret = ret + (ftp_payload,)
 		ret = FtpPayload(*ret)
 
-		print(ret)
+		# print(ret)
 		return ret
 
 	def pack(self):
@@ -76,7 +76,7 @@ class FtpPayload:
 		if remainder_length > 0:
 			ret += bytearray([0] * remainder_length)
 		ret = bytearray(ret)
-		print(len(ret))
+		# print(len(ret))
 		return ret
 
 	def __str__(self):
@@ -137,7 +137,8 @@ def msg_open_file_wo(filename: str):
 
 
 def msg_open_file_ro():
-	file = [ord(c) for c in '/main.lua']
+	# file = [ord(c) for c in '/main.lua']
+	file = [ord(c) for c in '/show.bin']
 	return msg_ftp(FtpPayload(1, 0, OP_OpenFileRO, len(file), 0, 1, 0, bytearray(file)))
 
 
@@ -152,7 +153,11 @@ def msg_write_file(sid, offset, chunk):
 
 
 def msg_read_file():
-	return msg_ftp(FtpPayload(1, 0, OP_ReadFile, 7, 128, 1, 0, bytearray([])))
+	return msg_ftp(FtpPayload(1, 0, OP_ReadFile, 70, 128, 1, 0, bytearray([])))
+
+
+def msg_terminate_session(sid):
+	return msg_ftp(FtpPayload(1, int(sid), OP_TerminateSession, 0, 0, 0, 0, bytearray([])))
 
 
 def print_ftp(msgin):
@@ -176,14 +181,11 @@ def ftp_write_file(nbytes=4):
 
 def ftp_read_file():
 	send(msg_open_file_ro())
-	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
-	if msgin is not None:
-		print_ftp(msgin)
+	wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL, seconds=3, do_print=True)
 
 	send(msg_read_file())
-	msgin = wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL)
-	if msgin is not None:
-		print_ftp(msgin)
+	wait_for_message(mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL, seconds=100, do_print=True)
+
 
 def wait_for_ftp_message(seconds=4, do_print=False):
 	wait_for_message((mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds, do_print)

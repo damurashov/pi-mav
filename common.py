@@ -27,10 +27,12 @@ heartbeat.timelast = datetime.datetime.now()
 def wait_for_message(response_msgids=None, seconds=4, n_max_messages=2, do_print=False):
 	time_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 	n_messages = 0
+	counter = 0
 	while datetime.datetime.now() < time_end:
 		try:
-			heartbeat()
-			msgin = mav.parse_char(sock.recv(300))
+			msgin = mav.parse_char(bytearray([]))
+			if msgin is None:
+				msgin = mav.parse_char(sock.recv(300))
 			# if msgin is not None and msgin.get_msgId() == response_msgid:
 			# 	return msgin
 			if msgin is not None:
