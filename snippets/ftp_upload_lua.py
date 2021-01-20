@@ -61,13 +61,11 @@ if __name__ == "__main__":
 
     offset = 0
     while len(file) != 0:
-        # chunk = file[:ftp.MAX_Payload]
-        # file = file[ftp.MAX_Payload:]
+        print(f'offset: {offset}')
         chunk = file[:CHUNK_SIZE]
         file = file[CHUNK_SIZE:]
         write_chunk(sid, offset, chunk)
         offset += len(chunk)
-        print(f'offset: {offset}')
 
     common.send(ftp.msg_terminate_session(sid))
     print('done')
