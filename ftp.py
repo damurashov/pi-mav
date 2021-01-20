@@ -55,6 +55,9 @@ class FtpPayload:
 			ftp_payload = ftp_payload.get_payload()
 
 		ftp_payload = bytearray(ftp_payload[7:])
+		if len(ftp_payload) < 12:
+			ftp_payload.extend(bytearray([0]) * (12 - len(ftp_payload)))
+
 		ret = struct.unpack("<HBBBBBxI", ftp_payload[0:12])
 
 		# Extract ftp payload (data field)

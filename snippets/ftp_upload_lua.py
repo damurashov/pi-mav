@@ -12,9 +12,7 @@ def lua_file_to_bytes(filename="hw.luac"):
 def _wait_ftp_response(seconds=10, do_print=False):
     m = common.wait_for_message((common.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=seconds)
     if m is not None:
-        print(f'Raw Ftp Response: {str(m)}')
         m = ftp.FtpPayload.construct_from_bytes(m.get_payload())
-        common.mavcommon.MAVLink_file_transfer_protocol_message
     if do_print:
         print(f'Ftp response: {str(m)}')
     return m
