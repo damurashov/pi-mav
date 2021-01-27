@@ -6,10 +6,19 @@ import threading
 import time
 import struct
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-veh_addr = ("192.168.4.1", 8001)
-mav = mavcommon.MAVLink(None)
-mavconn = mavutil.mavudp('localhost:10000')
+CONN_SIMULATOR = False
+
+if CONN_SIMULATOR:
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	veh_addr = ("127.0.0.1", 8000)
+	sock.connect(veh_addr)
+	sock.setblocking(0)
+	mav = mavcommon.MAVLink(None)
+else:
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	veh_addr = ("192.168.4.1", 8001)
+	mav = mavcommon.MAVLink(None)
+	mavconn = mavutil.mavudp('localhost:10000')
 
 
 def heartbeat():
