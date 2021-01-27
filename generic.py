@@ -1,4 +1,4 @@
-from common import *
+from connectivity import *
 
 
 def msg_set_position_target_local_ned():

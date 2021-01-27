@@ -1,5 +1,5 @@
 import ftp
-import common
+import connectivity
 import time
 
 
@@ -10,7 +10,7 @@ def lua_file_to_bytes(filename="hw.luac"):
 
 
 def _wait_ftp_response(seconds=10, do_print=False):
-    m = common.wait_for_message((common.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=seconds)
+    m = connectivity.wait_for_message((connectivity.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=seconds)
     if m is not None:
         m = ftp.FtpPayload.construct_from_bytes(m.get_payload())
     if do_print:
@@ -19,16 +19,16 @@ def _wait_ftp_response(seconds=10, do_print=False):
 
 
 def test():
-    common.send(ftp.msg_open_file_wo('/main.lua'))
-    m = common.wait_for_message((common.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=30)
+    connectivity.send(ftp.msg_open_file_wo('/main.lua'))
+    m = connectivity.wait_for_message((connectivity.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=30)
     print(m)
     if m is not None:
         ftp.FtpPayload.construct_from_bytes(m.get_payload())
 
 
 def open_session(filename='/main.lua') -> int:
-    common.send(ftp.msg_open_file_wo(filename))
-    m = common.wait_for_message((common.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=30)
+    connectivity.send(ftp.msg_open_file_wo(filename))
+    m = connectivity.wait_for_message((connectivity.mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL,), seconds=30)
 
     if m is not None:
         m = ftp.FtpPayload.construct_from_bytes(m.get_payload())
@@ -43,7 +43,7 @@ def write_chunk(session, off, data: bytearray):
     print(f'Writing chunk: \"{str(data)}\"')
 
     while True:
-        common.send(ftp.msg_write_file(session, off, data))
+        connectivity.send(ftp.msg_write_file(session, off, data))
         m = _wait_ftp_response(seconds=5, do_print=True)
         if m is not None:
             if m.offset == off:
@@ -67,5 +67,5 @@ if __name__ == "__main__":
         write_chunk(sid, offset, chunk)
         offset += len(chunk)
 
-    common.send(ftp.msg_terminate_session(sid))
+    connectivity.send(ftp.msg_terminate_session(sid))
     print('done')

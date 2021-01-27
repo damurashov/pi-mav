@@ -1,5 +1,5 @@
 from pymavlink.dialects.v20 import common as mavcommon
-from common import *
+from connectivity import *
 import time
 import struct
 

@@ -1,4 +1,4 @@
-from common import *
+from connectivity import *
 from command import *
 
 LUA_PARAM_1_RUN = 1

@@ -1,6 +1,6 @@
 from command import command_lua_run
-from common import wait_for_message
-from common import mavcommon
+from connectivity import wait_for_message
+from connectivity import mavcommon
 import time
 
 
