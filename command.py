@@ -30,6 +30,11 @@ def msg_land():
 	return msg.pack(mav)
 
 
+def _msg_user_1_led(index, r, g, b):
+	msg = mav.command_long_encode(1, 1, mavcommon.MAV_CMD_USER_1, 0, index, r, g, b, 0, 0, 0)
+	return msg.pack(mav)
+
+
 def command_land():
 	send(msg_land())
 
@@ -47,3 +52,11 @@ def command_arm(arm: bool):
 
 def command_takeoff():
 	send(msg_takeoff())
+
+
+def command_user_1_led(index, r, g, b):
+	send(_msg_user_1_led(index, r, g, b))
+
+
+def command_wait_for_ack(seconds=4, do_print=True):
+	return wait_for_message((mavcommon.MAVLINK_MSG_ID_COMMAND_ACK,), seconds, do_print)

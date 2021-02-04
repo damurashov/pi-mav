@@ -12,8 +12,4 @@ def _wait_ack():
 if __name__ == "__main__":
     command_lua_run(True)
     _wait_ack()
-    time.sleep(5)
-
-    command_lua_run(False)
-    _wait_ack()
-    time.sleep(3)
+    time.sleep(1)
