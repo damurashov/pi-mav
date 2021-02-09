@@ -45,8 +45,6 @@ def command_lua_run(run: bool):
 
 
 def command_arm(arm: bool):
-	send(msg_rc_channels_override())
-	time.sleep(0.001)
 	send(msg_arm(arm))
 
 
