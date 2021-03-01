@@ -1,11 +1,14 @@
 from command import *
 import time
 
+
+def _wait_for_ack(seconds=4, do_print=True):
+    wait_for_message((mavcommon.MAVLINK_MSG_ID_NAMED_VALUE_INT, mavcommon.MAVLINK_MSG_ID_COMMAND_ACK,), do_print=do_print, seconds=seconds)
+
+
 if __name__ == "__main__":
     command_arm(True)
-    command_wait_for_ack()
-
-    time.sleep(1)
+    _wait_for_ack(2)
 
     command_takeoff()
-    command_wait_for_ack()
+    _wait_for_ack(16)
