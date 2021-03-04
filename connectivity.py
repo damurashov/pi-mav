@@ -1,5 +1,6 @@
 import socket
-from pymavlink.dialects.v20 import common as mavcommon
+from pymavlink.dialects.v10 import common as mavcommon
+
 from pymavlink import mavutil
 import datetime
 import threading
@@ -66,5 +67,6 @@ def send(msg):
 	# sock.sendto(bytes(str(msg), "UTF-8"), veh_addr)
 	# mavconn.write(msg)
 	lock.acquire()
+	print(f"sending: {msg}")
 	sock.sendto(msg, veh_addr)
 	lock.release()
