@@ -16,3 +16,9 @@ def rc_channels_override():
     msg = mav.rc_channels_override_encode(0, 0, 1500, 1500, 1500, 1500, 2000, 2000, 0, 0)
     msg = msg.pack(mav)
     send(msg)
+
+
+def manual_control(x, y, z, r, buttons):
+    msg = mav.manual_control_encode(0, x, y, z, r, buttons)
+    msg = msg.pack(mav)
+    send(msg)
