@@ -1,4 +1,5 @@
 from generic import manual_control
+from command import command_arm
 import tkinter as tk
 
 
@@ -10,6 +11,8 @@ class KbController(tk.Tk):
 	MODE_ALTHOLD = 1
 	MODE_NAVIGATION = 2
 
+	CONTROL_SEND_PERIOD_MS = 1
+
 	def __init__(self):
 		super().__init__()
 
@@ -17,7 +20,7 @@ class KbController(tk.Tk):
 		self.y = 0
 		self.z = 0
 		self.r = 0
-		self.mode = 0
+		self.buttons = 0
 
 		self.bind("<KeyPress>", self.kb)
 		self.bind("<KeyRelease>", self.reset)
@@ -27,7 +30,7 @@ class KbController(tk.Tk):
 		self.y = 0
 		self.z = 0
 		self.r = 0
-		self.mode = 0
+		self.buttons = 0
 
 	def kb(self, event: tk.Event):
 		info = lambda k: print(f'"{str(k)}" of type {str(type(k))}')
@@ -48,6 +51,8 @@ class KbController(tk.Tk):
 					self.z = KbController.MAX
 				elif event.keysym == "Down":
 					self.z = KbController.MIN
+				elif event.keysym == "Escape":
+					command_arm(False)
 			else:
 				if event.keysym == "Right":
 					self.y = KbController.MAX
@@ -57,14 +62,18 @@ class KbController(tk.Tk):
 					self.x = KbController.MAX
 				elif event.keysym == "Down":
 					self.x = KbController.MIN
+				elif event.keysym == "Return":
+					command_arm(True)
 		elif event.type == tk.EventType.KeyRelease:
 			self.reset()
 
 	def send(self):
+		print(42)
 		manual_control(self.x, self.y, self.z, self.r, self.buttons)
+		self.after(KbController.CONTROL_SEND_PERIOD_MS, self.send)
 
 
 if __name__ == "__main__":
 	controller = KbController()
-	controller.after(1, controller.send)
+	controller.after(KbController.CONTROL_SEND_PERIOD_MS, controller.send)
 	controller.mainloop()
