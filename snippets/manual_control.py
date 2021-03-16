@@ -11,7 +11,7 @@ class KbController(tk.Tk):
 	MODE_ALTHOLD = 1
 	MODE_NAVIGATION = 2
 
-	CONTROL_SEND_PERIOD_MS = 1
+	CONTROL_SEND_PERIOD_MS = 40
 
 	def __init__(self):
 		super().__init__()
@@ -51,8 +51,6 @@ class KbController(tk.Tk):
 					self.z = KbController.MAX
 				elif event.keysym == "Down":
 					self.z = KbController.MIN
-				elif event.keysym == "Escape":
-					command_arm(False)
 			else:
 				if event.keysym == "Right":
 					self.y = KbController.MAX
@@ -64,6 +62,8 @@ class KbController(tk.Tk):
 					self.x = KbController.MIN
 				elif event.keysym == "Return":
 					command_arm(True)
+				elif event.keysym == "Escape":
+					command_arm(False)
 		elif event.type == tk.EventType.KeyRelease:
 			self.reset()
 
