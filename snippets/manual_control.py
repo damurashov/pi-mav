@@ -30,16 +30,15 @@ class KbController(tk.Tk):
 		self.y = 0
 		self.z = 0
 		self.r = 0
-		self.buttons = 0
 
 	def kb(self, event: tk.Event):
-		info = lambda k: print(f'"{str(k)}" of type {str(type(k))}')
+		# info = lambda k: print(f'"{str(k)}" of type {str(type(k))}')
+		info = lambda k: None
 		info(event)
 		info(event.type)
 		info(event.state)
 		info(event.keycode)
 		info(event.keysym)
-		print('-' * 20)
 
 		if event.type == tk.EventType.KeyPress:
 			if event.state & 0x0001:  # Shift
@@ -64,11 +63,13 @@ class KbController(tk.Tk):
 					command_arm(True)
 				elif event.keysym == "Escape":
 					command_arm(False)
+				elif event.keysym in ['0', '1', '2']:
+					self.buttons = int(event.keysym)
+					print(f'Mode: {self.buttons & 0b11}')
 		elif event.type == tk.EventType.KeyRelease:
 			self.reset()
 
 	def send(self):
-		print(42)
 		manual_control(self.x, self.y, self.z, self.r, self.buttons)
 		self.after(KbController.CONTROL_SEND_PERIOD_MS, self.send)
 
