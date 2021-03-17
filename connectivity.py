@@ -67,6 +67,6 @@ def send(msg):
 	# sock.sendto(bytes(str(msg), "UTF-8"), veh_addr)
 	# mavconn.write(msg)
 	lock.acquire()
-	print(f"sending: {msg}")
+	# print(f"sending: {msg}")
 	sock.sendto(msg, veh_addr)
 	lock.release()
