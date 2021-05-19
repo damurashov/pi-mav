@@ -1,5 +1,5 @@
 import socket
-from pymavlink.dialects.v10 import common as mavcommon
+from pymavlink.dialects.v20 import common as mavcommon
 
 from pymavlink import mavutil
 import datetime
@@ -34,7 +34,7 @@ def heartbeat():
 heartbeat.timelast = datetime.datetime.now()
 
 
-def wait_for_message(response_msgids=None, seconds=4, n_max_messages=2, do_print=False):
+def wait_for_message(response_msgids=None, seconds=4, do_print=False):
 	time_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 	n_messages = 0
 	counter = 0
@@ -66,7 +66,5 @@ lock = threading.Lock()
 def send(msg):
 	# sock.sendto(bytes(str(msg), "UTF-8"), veh_addr)
 	# mavconn.write(msg)
-	lock.acquire()
-	# print(f"sending: {msg}")
+	# print(f"sending: {str([int(m) for m in msg])}")
 	sock.sendto(msg, veh_addr)
-	lock.release()
