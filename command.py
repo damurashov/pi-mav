@@ -5,6 +5,12 @@ LUA_PARAM_1_RUN = 1
 LUA_PARAM_1_STOP = 0
 
 
+# http://mavlink.io/en/messages/common.html#MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
+REBOOT_SHUTDOWN_DO_NOTHING = 0
+REBOOT_SHUTDOWN_RESTART = 1
+REBOOT_SHUTDOWN_RESTART_BOOTLOADER = 3
+
+
 def msg_lua(param1):
 	msg = mav.command_long_encode(1, 1, mavcommon.MAV_CMD_USER_1, 0, param1, 0, 0, 0, 0, 0, 0)
 	return msg.pack(mav)
@@ -46,6 +52,12 @@ def command_lua_run(run: bool):
 
 def command_arm(arm: bool):
 	send(msg_arm(arm))
+
+
+def command_reboot(autopilot_r_type=REBOOT_SHUTDOWN_DO_NOTHING):
+	msg = mav.command_long_encode(1, 1, mavcommon.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, 0, autopilot_r_type, 0, 0, 0, 0, 0, 0)
+	msg = msg.pack(mav)
+	send(msg)
 
 
 def command_takeoff():
