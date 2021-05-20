@@ -1,80 +1,161 @@
 from generic import manual_control
-from command import command_arm
+from command import command_arm, command_lua_run
 import tkinter as tk
 
 
-class KbController(tk.Tk):
-	MIN = -1000
-	MAX = 1000
+def clamp(v, v_min, v_max):
+	assert v_min < v_max
+	return max(v_min, min(v_max, v))
 
-	MODE_STABILIZE = 0
-	MODE_ALTHOLD = 1
-	MODE_NAVIGATION = 2
+
+class Stick:
+	PITCH = "pitch"
+	ROLL = "roll"
+	YAW = "yaw"
+	THROTTLE = "throttle"
+
+	MAX = 1.0
+	MIN = -1.0
+	MID = 0.0
+	STEP = 0.1
+
+	@staticmethod
+	def normalize(stick_val):
+		return clamp(stick_val, Stick.MIN, Stick.MAX)
+
+
+def dbg_print_event_info(event: tk.Event):
+	info = lambda k: print(f'"{str(k)}" of type {str(type(k))}')
+	# info = lambda k: None
+	info(event)
+	info(event.type)
+	info(event.state)
+	info(event.keycode)
+	info(event.keysym)
+
+
+class MavlinkControl:
+
+	def __init__(self):
+		self.sticks = {
+			Stick.PITCH: Stick.MID,  # x
+			Stick.ROLL: Stick.MID,  # y
+			Stick.THROTTLE: Stick.MID,  # z
+			Stick.YAW: Stick.MID  # r
+		}
+		self.mode = 0
+
+	def send_manual_control(self):
+
+		def normalize(v):
+			return int(clamp(v * 1000, -1000, 1000))  # See MAVLink, MANUAL_CONTROL (#69)
+
+		args = tuple([normalize(v) for v in self.sticks.values()]) + (int(self.mode),)
+		manual_control(*args)
+
+	def normalize_sticks(self):
+		for k, v in self.sticks:
+			self.sticks[k] = Stick.normalize(self.sticks[k])
+
+	def arm(self, f: bool):
+		command_arm(f)
+
+	def lua(self, f_run):
+		command_lua_run(f_run)
+
+
+class KbController(tk.Tk, MavlinkControl):
 
 	CONTROL_SEND_PERIOD_MS = 40
 
-	def __init__(self):
-		super().__init__()
+	MOD_NONE = 0
+	MOD_SHIFT = 1
 
-		self.x = 0
-		self.y = 0
-		self.z = 0
-		self.r = 0
-		self.buttons = 0
+	def __init__(self):
+		tk.Tk.__init__(self)
+		MavlinkControl.__init__(self)
 
 		self.bind("<KeyPress>", self.kb)
-		self.bind("<KeyRelease>", self.reset)
+		self.bind("<KeyRelease>", self.kb)
 
-	def reset(self, *argv):
-		self.x = 0
-		self.y = 0
-		self.z = 0
-		self.r = 0
+	def is_manual_throttle(self):
+		return self.mode == 0
 
-	def kb(self, event: tk.Event):
-		# info = lambda k: print(f'"{str(k)}" of type {str(type(k))}')
-		info = lambda k: None
-		info(event)
-		info(event.type)
-		info(event.state)
-		info(event.keycode)
-		info(event.keysym)
+	def reset_sticks(self):
+		thr = self.sticks[Stick.THROTTLE]
+
+		for k, v in self.sticks:
+			self.sticks[k] = Stick.MID
+
+		# Restore throttle
+		if self.is_manual_throttle():
+			self.sticks[Stick.THROTTLE] = thr
+
+	@staticmethod
+	def get_kb_modifier(event: tk.Event):
+		if event.state & 0x0001:
+			return KbController.MOD_SHIFT
+		else:
+			return KbController.MOD_NONE
+
+	def kb_arrows(self, event: tk.Event):
+		def set_max(x):
+			return Stick.MAX
+
+		def set_min(x):
+			return Stick.MIN
+
+		def decr(x):
+			return Stick.normalize(x - Stick.STEP)
+
+		def incr(x):
+			return Stick.normalize(x + Stick.STEP)
+
+		mode = KbController.get_kb_modifier(event)
+
+		callables = {
+			KbController.MOD_NONE: {
+				"Right": [Stick.ROLL, set_max],
+				"Left": [Stick.ROLL, set_min],
+				"Up":  [Stick.PITCH, set_max],
+				"Down": [Stick.PITCH, set_min],
+			},
+			KbController.MOD_SHIFT: {
+				"Right": [Stick.YAW, set_max],
+				"Left": [Stick.YAW, set_min],
+				"Up": [Stick.THROTTLE, set_max if self.is_manual_throttle() else incr],
+				"Down": [Stick.THROTTLE, set_min if self.is_manual_throttle() else decr]
+			}
+		}
 
 		if event.type == tk.EventType.KeyPress:
-			if event.state & 0x0001:  # Shift
-				if event.keysym == "Right":
-					self.r = KbController.MAX
-				elif event.keysym == "Left":
-					self.r = KbController.MIN
-				elif event.keysym == "Up":
-					self.z = KbController.MAX
-				elif event.keysym == "Down":
-					self.z = KbController.MIN
-			else:
-				if event.keysym == "Right":
-					self.y = KbController.MAX
-				elif event.keysym == "Left":
-					self.y = KbController.MIN
-				elif event.keysym == "Up":
-					self.x = KbController.MAX
-				elif event.keysym == "Down":
-					self.x = KbController.MIN
-				elif event.keysym == "Return":
-					command_arm(True)
-				elif event.keysym == "Escape":
-					command_arm(False)
-				elif event.keysym in ['0', '1', '2']:
-					self.buttons = int(event.keysym)
-					print(f'Mode: {self.buttons & 0b11}')
-		elif event.type == tk.EventType.KeyRelease:
-			self.reset()
+			stick_name, cbl = callables[mode][event.keysym]
+			self.sticks[stick_name] = cbl(stick_name)
+		else:
+			self.reset_sticks()
 
-	def send(self):
-		manual_control(self.x, self.y, self.z, self.r, self.buttons)
-		self.after(KbController.CONTROL_SEND_PERIOD_MS, self.send)
+	def kb(self, event: tk.Event):
+		dbg_print_event_info(event)
+
+		callables_run = {
+			KbController.MOD_NONE: [command_arm, (event.keysym == "Return",)],
+			KbController.MOD_SHIFT: [command_lua_run, (event.keysym == "Return",)]
+		}
+
+		if event.keysym in {"Up", "Down", "Left", "Right"}:
+			self.kb_arrows(event)
+			return
+
+		if event.keysym in ["Return", "Escape"] and event.type == tk.EventType.KeyPress:
+			cb, args = callables_run[KbController.get_kb_modifier(event)]
+			cb(*args)
+			return
+
+		if event.keysym in ['0', '1', '2'] and event.type == tk.EventType.KeyPress:
+			self.mode = int(event.keysym)
 
 
 if __name__ == "__main__":
 	controller = KbController()
-	controller.after(KbController.CONTROL_SEND_PERIOD_MS, controller.send)
+	controller.after(KbController.CONTROL_SEND_PERIOD_MS, controller.send_manual_control)
 	controller.mainloop()
