@@ -1,11 +1,22 @@
 from generic import manual_control
 from command import command_arm, command_lua_run
+from connectivity import wait_for_message, mavcommon
 import tkinter as tk
+import threading
 
 
 def clamp(v, v_min, v_max):
 	assert v_min < v_max
 	return max(v_min, min(v_max, v))
+
+
+def recv_messages():
+	msgs = [
+		mavcommon.MAVLINK_MSG_ID_NAMED_VALUE_INT,
+		mavcommon.MAVLINK_MSG_ID_COMMAND_ACK
+	]
+	while True:
+		wait_for_message(msgs, do_print=True, seconds=60)
 
 
 class Stick:
@@ -25,13 +36,16 @@ class Stick:
 
 
 def dbg_print_event_info(event: tk.Event):
+	if 1:
+		return
+
 	info = lambda k: print(f'"{str(k)}" of type {str(type(k))}')
-	# info = lambda k: None
 	info(event)
 	info(event.type)
 	info(event.state)
 	info(event.keycode)
 	info(event.keysym)
+	print('---')
 
 
 class MavlinkControl:
@@ -48,14 +62,10 @@ class MavlinkControl:
 	def send_manual_control(self):
 
 		def normalize(v):
-			return int(clamp(v * 1000, -1000, 1000))  # See MAVLink, MANUAL_CONTROL (#69)
+			return int(clamp(Stick.normalize(v) * 1000, -1000, 1000))  # See MAVLink, MANUAL_CONTROL (#69)
 
 		args = tuple([normalize(v) for v in self.sticks.values()]) + (int(self.mode),)
 		manual_control(*args)
-
-	def normalize_sticks(self):
-		for k, v in self.sticks:
-			self.sticks[k] = Stick.normalize(self.sticks[k])
 
 	def arm(self, f: bool):
 		command_arm(f)
@@ -77,6 +87,10 @@ class KbController(tk.Tk, MavlinkControl):
 
 		self.bind("<KeyPress>", self.kb)
 		self.bind("<KeyRelease>", self.kb)
+
+	def normalize_sticks(self):
+		for k, v in self.sticks:
+			self.sticks[k] = Stick.normalize(self.sticks[k])
 
 	def is_manual_throttle(self):
 		return self.mode == 0
@@ -111,8 +125,6 @@ class KbController(tk.Tk, MavlinkControl):
 		def incr(x):
 			return Stick.normalize(x + Stick.STEP)
 
-		mode = KbController.get_kb_modifier(event)
-
 		callables = {
 			KbController.MOD_NONE: {
 				"Right": [Stick.ROLL, set_max],
@@ -128,6 +140,7 @@ class KbController(tk.Tk, MavlinkControl):
 			}
 		}
 
+		mode = KbController.get_kb_modifier(event)
 		if event.type == tk.EventType.KeyPress:
 			stick_name, cbl = callables[mode][event.keysym]
 			self.sticks[stick_name] = cbl(stick_name)
@@ -156,6 +169,9 @@ class KbController(tk.Tk, MavlinkControl):
 
 
 if __name__ == "__main__":
+	t = threading.Thread(target=recv_messages)
+	t.start()
+
 	controller = KbController()
 	controller.after(KbController.CONTROL_SEND_PERIOD_MS, controller.send_manual_control)
 	controller.mainloop()
