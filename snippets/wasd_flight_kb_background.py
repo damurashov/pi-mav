@@ -42,13 +42,18 @@ class Control(Pioneer):
         self.pos = {
             'x': 0.0,
             'y': 0.0,
-            'z': 1.0,
-            'w': math.radians(90.0)}
+            'z': 0.0,
+            'w': math.radians(0.0)}
+
+    def reset(self):
+        for k in self.pos.keys():
+            self.pos[k] = 0
 
     def step(self, key, step):
         assert key in self.pos.keys()
-        self.pos[key] += step
+        self.pos[key] = step
         self.go_to_local_point(x=self.pos['x'], y=self.pos['y'], z=self.pos['z'], yaw=self.pos['w'])
+        self.reset()
 
 
 if __name__ == '__main__':
@@ -56,7 +61,7 @@ if __name__ == '__main__':
     # Every control command decreases/increases position
     STEP_XY = 0.2
     STEP_Z = 0.1
-    STEP_YAW = math.radians(float(90))
+    STEP_YAW = math.radians(float(45))
 
     pioneer_mini = Control()
 
@@ -75,7 +80,7 @@ if __name__ == '__main__':
     keyboard.add_hotkey('shift+s', pioneer_mini.step, args=('z', -STEP_Z,))
     keyboard.add_hotkey('shift+w', pioneer_mini.step, args=('z', +STEP_Z,))
 
-    pioneer_mini.step('x', 0)  # Make the copter fly to the initial position (0, 0, 1)
+    # pioneer_mini.step('x', 0)  # Trigger setting of the initial position (0, 0, 1)
 
     while True:
         camera_frame = pioneer_mini.get_raw_video_frame()
@@ -84,4 +89,5 @@ if __name__ == '__main__':
 
         cv2.imshow('pioneer_camera_stream', camera_frame)
 
-        key = cv2.waitKey(1)
+        if cv2.waitKey(1) == 27:  # esc
+            break
