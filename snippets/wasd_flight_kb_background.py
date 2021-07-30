@@ -83,11 +83,14 @@ if __name__ == '__main__':
     # pioneer_mini.step('x', 0)  # Trigger setting of the initial position (0, 0, 1)
 
     while True:
-        camera_frame = pioneer_mini.get_raw_video_frame()
-        if camera_frame is not None:
-            camera_frame = cv2.imdecode(np.frombuffer(camera_frame, dtype=np.uint8), cv2.IMREAD_COLOR)
+        try:
+            camera_frame = pioneer_mini.get_raw_video_frame()
+            if camera_frame is not None:
+                camera_frame = cv2.imdecode(np.frombuffer(camera_frame, dtype=np.uint8), cv2.IMREAD_COLOR)
 
-        cv2.imshow('pioneer_camera_stream', camera_frame)
+            cv2.imshow('pioneer_camera_stream', camera_frame)
 
-        if cv2.waitKey(1) == 27:  # esc
-            break
+            if cv2.waitKey(1) == 27:  # esc
+                break
+        except:
+            pass
