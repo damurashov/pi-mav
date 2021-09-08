@@ -1,4 +1,6 @@
 from connectivity import *
+from command import *
+from generic import *
 import threading
 import tkinter as tk
 
@@ -57,6 +59,7 @@ def cb_arm(arm: bool):
 		# return_strategy='return-unique'
 	)
 
+
 def get_gui():
 	root = tk.Tk()
 
@@ -65,11 +68,13 @@ def get_gui():
 	disarm_btn = tk.Button(main_frame, text="Disarm", command=lambda: cb_arm(False))
 	run_rc_thread_btn = tk.Button(main_frame, text="Run RC thread", command=lambda: run_rc_thread(True))
 	stop_rc_thread_btn = tk.Button(main_frame, text="Stop RC thread", command=lambda: run_rc_thread(False))
+	takeoff_btn = tk.Button(main_frame, text="Takeoff", command=lambda: command_takeoff())
+	land_btn = tk.Button(main_frame, text="Land", command=lambda: command_land())
+	goto_btn = tk.Button(main_frame, text="To go...", command=lambda: set_position_target_local_ned())
 
-	arm_btn.pack()
-	disarm_btn.pack()
-	run_rc_thread_btn.pack()
-	stop_rc_thread_btn.pack()
+	for b in [arm_btn, disarm_btn, run_rc_thread_btn, stop_rc_thread_btn, takeoff_btn, land_btn, goto_btn]:
+		b.pack(fill=tk.X)
+
 	main_frame.pack()
 
 	return root
