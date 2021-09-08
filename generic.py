@@ -1,9 +1,10 @@
 from connectivity import *
+import math
 
 
 def msg_set_position_target_local_ned():
-    msg = mav.set_position_target_local_ned_encode(0, 0, 0, 0, 0, 1, 1, 1, 0.5, 0.5, 0.5,
-                                                   0, 0, 0, 0, 0)
+    msg = mav.set_position_target_local_ned_encode(0, 0, 0, mavcommon.MAV_FRAME_BODY_FRD, 0, 1, 0, 0.5, 0.5, 0.5, 0.5,
+                                                   0, 0, 0, math.pi/2, 0)
     mav.set_position_target_local_ned_encode(1, 1, 1, 1, 0xff, 0, 1, 1, 1, 1, 1, 1, 1, 1, 90, 1)
     return msg.pack(mav)
 
