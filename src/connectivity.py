@@ -1,4 +1,4 @@
-import pymavlink
+from pymavlink import mavutil
 import socket
 import pylog
 import sys
@@ -85,8 +85,8 @@ class _MavlinkHeartbeat(threading.Thread):
 	RECEIVE_PERIOD_SECONDS = 1
 
 	def _send(self):
-		self._mavlink_connection.mav.heartbeat_send(pymavlink.mavutil.mavlink.MAV_TYPE_GCS,
-			pymavlink.mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+		self._mavlink_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS,
+			mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
 
 	def _try_receive(self, blocking=True, timeout=RECEIVE_PERIOD_SECONDS) -> bool:
 		"""
@@ -124,7 +124,7 @@ class _MavlinkHeartbeat(threading.Thread):
 		time.sleep(_MavlinkHeartbeat.HEARTBEAT_SEND_PERIOD_SECONDS)
 
 	def __init__(self, mavlink_socket):
-		threading.Thread.__init__(target=self._task)
+		threading.Thread.__init__(self, target=self._task)
 		self._mavlink_connection = mavlink_socket
 		self._last_received = None
 
@@ -151,7 +151,7 @@ class PioneerUdpMavlinkConnection(MavlinkConnection):
 		any message will do.
 		"""
 		MavlinkConnection.__init__(self)
-		self._mavlink_connection = pymavlink.mavutil.mavlink_connection('udpout:%s:%s' %
+		self._mavlink_connection = mavutil.mavlink_connection('udpout:%s:%s' %
 			(PioneerUdpMavlinkConnection.TARGET_IP, PioneerUdpMavlinkConnection.TARGET_UDP_PORT,))
 		self._heartbeat = _MavlinkHeartbeat(self._mavlink_connection)
 
