@@ -11,10 +11,19 @@ _BEGIN_JPEG_PACKAGE_MARKER = b'\xff\xd8'
 _END_JPEG_PACKAGE_MARKER = b'\xff\xd9'
 
 
-class MavlinkConnection:
+class MavlinkConnectionInfo:
 
-	def __init__(self):
-		self._mavlink_connection = None
+	@property
+	def target_system(self):
+		return 0
+
+	@property
+	def target_component(self):
+		return 0
+
+	@property
+	def recv_timeout_sec(self):
+		return 1
 
 	@property
 	def connection(self):
@@ -22,7 +31,7 @@ class MavlinkConnection:
 		Returns an instance of MAVLink connection. "None" effectively denotes an error. It either means that (1) no
 		connection could be established, or (2) that the socket hasn't been initialized by the moment
 		"""
-		return self._mavlink_connection
+		raise NotImplemented
 
 
 class Esp32Camera:
@@ -129,7 +138,7 @@ class _MavlinkHeartbeat(threading.Thread):
 		self._last_received = None
 
 
-class PioneerUdpMavlinkConnection(MavlinkConnection):
+class PioneerUdpMavlinkConnection(MavlinkConnectionInfo):
 
 	TARGET_IP = '192.168.4.1'
 	TARGET_UDP_PORT = 8001
@@ -144,13 +153,16 @@ class PioneerUdpMavlinkConnection(MavlinkConnection):
 
 		return self._heartbeat.check_connection()
 
+	def connection(self):
+		return self._mavlink_connection
+
 	def __init__(self, maintain_heartbeat=False):
 		"""
 		:param maintain_heartbeat: If no messages were sent to the target within the last 5 seconds, the target stops
 		sending any packages to the client. Effectively, to maintain a connection, any message will do. We follow the
 		standard and use HEARTBEAT. The functionality is encapsulated in _MavlinkHeartbeat
 		"""
-		MavlinkConnection.__init__(self)
+		MavlinkConnectionInfo.__init__(self)
 		self._mavlink_connection = mavutil.mavlink_connection('udpout:%s:%s' %
 			(PioneerUdpMavlinkConnection.TARGET_IP, PioneerUdpMavlinkConnection.TARGET_UDP_PORT,))
 		self._heartbeat = _MavlinkHeartbeat(self._mavlink_connection)
