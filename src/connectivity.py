@@ -111,7 +111,10 @@ class _MavlinkHeartbeat(threading.Thread):
 			return self._try_receive(timeout=timeout)
 		else:
 			if self._last_received is None:
-				return self._try_receive(timeout=timeout)
+				time.sleep(_MavlinkHeartbeat.RECEIVE_PERIOD_SECONDS)
+
+			if self._last_received is None:
+				return False
 
 			return time.time() - self._last_received < _MavlinkHeartbeat.RECEIVE_PERIOD_SECONDS
 
