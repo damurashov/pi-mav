@@ -146,9 +146,9 @@ class PioneerUdpMavlinkConnection(MavlinkConnection):
 
 	def __init__(self, maintain_heartbeat=False):
 		"""
-		:param maintain_heartbeat: If the HEARTBEAT sending routine is kept unmaintained, and no messages are sent
-		to the target, the target stops sending any packages to the client. Effectively, to maintain a connection,
-		any message will do.
+		:param maintain_heartbeat: If no messages were sent to the target within the last 5 seconds, the target stops
+		sending any packages to the client. Effectively, to maintain a connection, any message will do. We follow the
+		standard and use HEARTBEAT. The functionality is encapsulated in _MavlinkHeartbeat
 		"""
 		MavlinkConnection.__init__(self)
 		self._mavlink_connection = mavutil.mavlink_connection('udpout:%s:%s' %
