@@ -40,11 +40,24 @@ class Op:
 
 
 # Error codes
-class Nak:
+class Nak(Exception):
+
 	@staticmethod
-	def to_string(val):
+	def to_string(nak):
 		rev_dict = dict((v, k) for k, v in Nak.__dict__.items() if type(v) is int)
-		return rev_dict[val]
+		return rev_dict[nak]
+
+	@staticmethod
+	def try_raise(nak):
+		"""
+		:param nak: Standard MAVLink Nak code
+		:return: If nak does signify a critical error, raises an appropriate exception
+		"""
+		if nak != Nak.NONE and nak != Nak.EOF:
+			raise Nak(nak)
+
+	def __init__(self, nak):
+		Exception.__init__(Nak.to_string(nak))
 
 	NONE = 0
 	FAIL = 1
@@ -283,7 +296,7 @@ class Ftp:
 		if not payload:
 			return None
 
-		return payload.nak, payload.payload[:payload.size]
+		return payload.nak, payload.payload
 
 	@increase_seq
 	def create_file(self, file_path):
