@@ -7,6 +7,7 @@ import re
 os.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))  # src
 
 from connectivity import SYSID, COMPID, RECV_TIMEOUT_SEC
+from generic import Logging
 
 TARGET_NETWORK = 0
 
@@ -148,6 +149,7 @@ class Plumbing:
 			timeout=RECV_TIMEOUT_SEC)
 
 		if not msg:
+			Logging.get_logger().info(Logging.format(__file__, Plumbing, Plumbing.receive, "failed to receive", topics=['Conn']))
 			return None
 
 		return msg
@@ -161,7 +163,12 @@ class Plumbing:
 		if not msg:
 			return None
 
-		return FtpPayload.construct_from_bytes(msg.get_payload())
+		payload = FtpPayload.construct_from_bytes(msg.get_payload())
+
+		Logging.get_logger().debug(Logging.format(__file__, Plumbing, Plumbing.receive_payload,
+			"Got payload:", str(payload), "payload.payload:", payload.payload))
+
+		return payload
 
 	@increase_seq
 	def list_directory(self, offset, file_path):

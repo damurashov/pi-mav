@@ -1,17 +1,16 @@
 from pymavlink import mavutil
 import socket
-import pylog
 import sys
 import threading
 import time
+from generic import Logging
 
-_log = pylog.Log()
 _BEGIN_JPEG_PACKAGE_MARKER = b'\xff\xd8'
 _END_JPEG_PACKAGE_MARKER = b'\xff\xd9'
 
 SYSID = 0
 COMPID = 0
-RECV_TIMEOUT_SEC = 1
+RECV_TIMEOUT_SEC = 2
 
 
 class Esp32Camera:
@@ -40,7 +39,7 @@ class Esp32Camera:
 			self.__video_control_socket.connect(video_control_address)
 			self.__video_socket.bind(self.__video_control_socket.getsockname())
 		except socket.error as e:
-			_log.error([__file__, Esp32Camera, "receive_frame"], "Unable to connect to the target", possible_solutions=["Connect to the target's WiFi network"])
+			Logging.get_logger().error(f"[connectivity: Esp32Camera] Conn | Unable to connect to the target")
 			sys.exit()
 
 	def receive_frame(self):
@@ -52,17 +51,22 @@ class Esp32Camera:
 				self.__video_frame_buffer += self.__video_socket.recv(Esp32Camera.VIDEO_BUFFER_SIZE)
 				beginning = self.__video_frame_buffer.find(_BEGIN_JPEG_PACKAGE_MARKER)
 				end = self.__video_frame_buffer.find(_END_JPEG_PACKAGE_MARKER)  # TODO: search from starting pos
+
 				if beginning != -1 and end != -1 and end > beginning:
 					self.__raw_video_frame = self.__video_frame_buffer[beginning:end + 2]
 					self.__video_frame_buffer = self.__video_frame_buffer[end + 2:]
 					break
 				else:
-					_log.debug([__file__, Esp32Camera, "receive_frame"], "corrupt frame", got_number_of_bytes=len(self.__raw_video_frame))
+					Logging.get_logger().warning(
+						f"[connectivity: Esp32Camera] Conn | corrupt frame; # bytes: {len(self.__raw_video_frame)}")
 					self.__video_frame_buffer = bytes()
 					self.__raw_video_frame = bytes()
+
 			return self.__raw_video_frame
+
 		except socket.error as exc:
-			_log.error([__file__, Esp32Camera, "receive_frame"], "Caught exception socket.error", message=str(exc))
+			Logging.get_logger().error(
+				f"[connectivity: Esp32Camera] Conn | Caught exception socket.error; message = \"{str(exc)}\"")
 
 
 class MavlinkHeartbeat(threading.Thread):
