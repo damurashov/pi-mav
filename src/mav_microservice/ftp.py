@@ -204,7 +204,7 @@ class Plumbing:
 
 		ret = []
 
-		for m in re.finditer(Plumbing.LIST_RESPONSE_RE, payload.payload.decode('utf-8')):
+		for m in re.finditer(Plumbing.LIST_RESPONSE_RE, payload.payload.decode('ascii')):
 			type = m.group(1)
 			name = m.group(2)
 			size = int(m.group(3))
