@@ -1,10 +1,10 @@
 import struct
 from pymavlink.dialects.v20 import common
-import os
+import sys
 import pathlib
 import re
 
-os.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))  # src
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))  # src
 
 from connectivity import SYSID, COMPID, RECV_TIMEOUT_SEC
 from generic import Logging
@@ -46,13 +46,14 @@ class Nak:
 	FILE_PROTECTED = 9
 	FILE_NOT_FOUND = 10
 
+
 class FtpPayload:
 
 	OVERALL_LENGTH = 251
 	PAYLOAD_LENGTH = 239
 	HEADER_LENGTH = OVERALL_LENGTH - PAYLOAD_LENGTH
 
-	def __init__(self, seq, session, opcode, size, req_opcode, burst_complete, offset, payload):
+	def __init__(self, seq=0, session=0, opcode=0, size=0, req_opcode=0, burst_complete=0, offset=0, payload=b''):
 		self.seq = seq
 		self.session = session
 		self.opcode = opcode
@@ -61,6 +62,13 @@ class FtpPayload:
 		self.burst_complete = burst_complete
 		self.offset = offset
 		self.payload = payload
+
+	@property
+	def nak(self):
+		if self.opcode == Op.ACK:
+			return Nak.NONE
+
+		return int(self.payload[0])
 
 	@staticmethod
 	def construct_from_bytes(ftp_payload):
@@ -75,7 +83,8 @@ class FtpPayload:
 
 		# Extract ftp payload (data field)
 		ftp_payload = ftp_payload[FtpPayload.HEADER_LENGTH:]
-		ftp_payload = ftp_payload[:ret[3]]  # Cut the tail. TODO: inconsistent with, for example, ListDirectory return format
+		ftp_payload += b'\x00'  # Apparently, "struct.unpack" has rather inconvenient feature to cut trailing zeros
+		ftp_payload = ftp_payload[:ret[3]]  # Cut the tail.
 
 		ret = ret + (ftp_payload,)
 		ret = FtpPayload(*ret)
@@ -106,9 +115,20 @@ class FtpPayload:
 			self.session, self.opcode, self.req_opcode, self.size, self.burst_complete, self.offset, plen)
 
 		if plen > 0:
-			ret += " [%u]" % self.payload[0]
+			ret += " [%s]" % self.payload[:]
 
 		return ret
+
+
+def increase_seq(func):
+
+	def wrapper(self, *args, **kwargs):
+		ret = func(self, *args, **kwargs)
+		self.seq += 1
+
+		return ret
+
+	return wrapper
 
 
 class Plumbing:
@@ -118,35 +138,26 @@ class Plumbing:
 
 	TYPE_LIST_RESPONSE_RE = r'(D|S|F)'
 	NAME_LIST_RESPONSE_RE = r'([^\t\/]+)'
-	SIZE_LIST_RESPONSE_RE = r'-?[0-9]+'
+	SIZE_LIST_RESPONSE_RE = r'(-?[0-9]+)'
 	LIST_RESPONSE_RE = TYPE_LIST_RESPONSE_RE + NAME_LIST_RESPONSE_RE + r'\t' + SIZE_LIST_RESPONSE_RE + r'\0'
 
 	def __init__(self, connection):
 		self.connection = connection
 		self.seq = 0
 
-	@staticmethod
-	def increase_seq(func):
-
-		def wrapper(self, *args, **kwargs):
-			ret = func(self, *args, **kwargs)
-			self.seq += 1
-
-			return ret
-
-		return wrapper
-
 	def send(self, payload):
 		payload.seq = self.seq
-		self.connection.file_transfer_protocol_send(TARGET_NETWORK, SYSID, COMPID, payload.pack())
+		self.connection.mav.file_transfer_protocol_send(TARGET_NETWORK, SYSID, COMPID, payload.pack())
 
 	def receive(self):
 		"""
 		:return: FtpPayload, or None
 		"""
-		msg = self.connection.recv_match(type="FILE_TRANSFER_PROTOCOL",
-			condition=f"FILE_TRANSFER_PROTOCOL.seq=={self.seq}", blocking=True,
-			timeout=RECV_TIMEOUT_SEC)
+		# msg = self.connection.recv_match(type="FILE_TRANSFER_PROTOCOL",
+		# 	condition=f"FILE_TRANSFER_PROTOCOL.seq=={self.seq}", blocking=True,
+		# 	timeout=RECV_TIMEOUT_SEC)
+
+		msg = self.connection.recv_match(type="FILE_TRANSFER_PROTOCOL", blocking=True, timeout=RECV_TIMEOUT_SEC)
 
 		if not msg:
 			Logging.get_logger().info(Logging.format(__file__, Plumbing, Plumbing.receive, "failed to receive", topics=['Conn']))
@@ -166,7 +177,7 @@ class Plumbing:
 		payload = FtpPayload.construct_from_bytes(msg.get_payload())
 
 		Logging.get_logger().debug(Logging.format(__file__, Plumbing, Plumbing.receive_payload,
-			"Got payload:", str(payload), "payload.payload:", payload.payload))
+			"Got payload:", str(payload)))
 
 		return payload
 
@@ -176,7 +187,8 @@ class Plumbing:
 		:param directory: Path to the requested directory, unix-like format
 		:return: (NakCode, [("D"|"F"|"S", NAME, SIZE), ...]), or None if failed to get a response
 		"""
-		payload = FtpPayload(opcode=Op.LIST_DIRECTORY, size=len(file_path), offset=offset, payload=bytearray(file_path))
+		payload = FtpPayload(opcode=Op.LIST_DIRECTORY, size=len(file_path), offset=offset,
+			payload=bytearray(file_path, encoding='ascii'))
 		self.send(payload)
 		payload = self.receive_payload()
 
@@ -192,15 +204,13 @@ class Plumbing:
 
 		ret = []
 
-		for m in re.finditer(Plumbing.LIST_RESPONSE_RE, payload):
+		for m in re.finditer(Plumbing.LIST_RESPONSE_RE, payload.payload.decode('utf-8')):
 			type = m.group(1)
 			name = m.group(2)
 			size = int(m.group(3))
 			ret += [(type, name, size, )]
 
-		ret = ret[:payload.size]
-
-		return ret
+		return payload.nak, ret
 
 	@increase_seq
 	def terminate_session(self, session):
@@ -229,7 +239,7 @@ class Plumbing:
 		if not payload:
 			return None
 
-		return payload
+		return payload.nak
 
 	@increase_seq
 	def open_file_ro(self, file_path):
@@ -237,13 +247,14 @@ class Plumbing:
 		:param file_path: Path to the requested file, unix-like format
 		:return: (NakCode, Session ID), or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.OPEN_FILE_RO, size=len(file_path), payload=bytearray(file_path)))
+		self.send(FtpPayload(opcode=Op.OPEN_FILE_RO, size=len(file_path),
+			payload=bytearray(file_path, encoding='ascii')))
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode, payload.session
+		return payload.nak, payload.session
 
 	@increase_seq
 	def read_file(self, session, offset):
@@ -259,7 +270,7 @@ class Plumbing:
 		if not payload:
 			return None
 
-		return payload.opcode, payload.payload[:payload.size]
+		return payload.nak, payload.payload[:payload.size]
 
 	@increase_seq
 	def create_file(self, file_path):
@@ -267,13 +278,13 @@ class Plumbing:
 		:param file_path: Path to the requested file, unix-like format
 		:return: (NakCode, Session ID), or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.READ_FILE, size=len(file_path), payload=bytearray(file_path)))
+		self.send(FtpPayload(opcode=Op.READ_FILE, size=len(file_path), payload=bytearray(file_path, encoding='ascii')))
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode, payload.session
+		return payload.nak, payload.session
 
 	@increase_seq
 	def write_file(self, session, content):
@@ -289,7 +300,7 @@ class Plumbing:
 		if not payload:
 			return None
 
-		return payload.opcode
+		return payload.nak
 
 	@increase_seq
 	def remove_file(self, file_path):
@@ -297,14 +308,14 @@ class Plumbing:
 		:param file_path: Path to the requested file, unix-like format
 		:return: NakCode, or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.REMOVE_FILE, size=len(file_path), payload=bytearray(file_path)))
+		self.send(FtpPayload(opcode=Op.REMOVE_FILE, size=len(file_path), payload=bytearray(file_path, encoding='ascii')))
 
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode
+		return payload.nak
 
 	@increase_seq
 	def create_directory(self, dir_path):
@@ -312,13 +323,15 @@ class Plumbing:
 		:param dir_path: Path to the requested file, unix-like format
 		:return: NakCode, or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.CREATE_DIRECTORY, size=len(dir_path), payload=bytearray(dir_path)))
+		self.send(FtpPayload(opcode=Op.CREATE_DIRECTORY, size=len(dir_path),
+			payload=bytearray(dir_path, encoding='ascii')))
+
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode
+		return payload.nak
 
 	@increase_seq
 	def remove_directory(self, dir_path):
@@ -326,13 +339,15 @@ class Plumbing:
 		:param dir_path: Path to the requested directory, unix-like format
 		:return: NakCode, or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.CREATE_DIRECTORY, size=len(dir_path), payload=bytearray(dir_path)))
+		self.send(FtpPayload(opcode=Op.CREATE_DIRECTORY, size=len(dir_path),
+			payload=bytearray(dir_path, encoding='ascii')))
+
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode
+		return payload.nak
 
 	@increase_seq
 	def open_file_wo(self, file_path):
@@ -340,13 +355,15 @@ class Plumbing:
 		:param file_path: Path to the requested file, unix-like format
 		:return: (NakCode, Session ID), or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.OPEN_FILE_WO, size=len(file_path), payload=bytearray(file_path)))
+		self.send(FtpPayload(opcode=Op.OPEN_FILE_WO, size=len(file_path),
+			payload=bytearray(file_path, encoding='ascii')))
+
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode, payload.session
+		return payload.nak, payload.session
 
 	@increase_seq
 	def truncate_file(self, offset, file_path):
@@ -355,13 +372,15 @@ class Plumbing:
 		:param file_path: Path to the requested file, unix-like format
 		:return: NakCode, or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.TRUNCATE_FILE, size=len(file_path), offset=offset, payload=bytearray(file_path)))
+		self.send(FtpPayload(opcode=Op.TRUNCATE_FILE, size=len(file_path), offset=offset,
+			payload=bytearray(file_path, encoding='ascii')))
+
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode
+		return payload.nak
 
 	@increase_seq
 	def rename(self, src_file_path, dest_file_path):
@@ -370,14 +389,16 @@ class Plumbing:
 		:param dest_file_path: Path to the file after renaming, unix-like format
 		:return: NakCode, or None if failed to get a response
 		"""
-		paths_packed = bytearray(src_file_path) + '\0' + bytearray(dest_file_path) + '\0'
+		paths_packed = bytearray(src_file_path, encoding='ascii') + '\0' + bytearray(dest_file_path,
+			encoding='ascii') + '\0'
+
 		self.send(FtpPayload(opcode=Op.RENAME, size=len(paths_packed), payload=paths_packed))
 		payload = self.receive_payload()
 
 		if not payload:
 			return None
 
-		return payload.opcode
+		return payload.nak
 
 	@increase_seq
 	def calc_file_crc32(self, file_path):
@@ -395,4 +416,4 @@ class Plumbing:
 		crc32 = payload[:4]
 		crc32 = int.from_bytes(crc32, byteorder=NETWORK_BYTE_ORDER, signed=False)
 
-		return payload.opcode, crc32
+		return payload.nak, crc32
