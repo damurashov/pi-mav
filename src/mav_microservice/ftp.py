@@ -6,7 +6,9 @@ import re
 
 os.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))  # src
 
-from connectivity import MavlinkConnection
+from connectivity import SYSID, COMPID, RECV_TIMEOUT_SEC
+
+TARGET_NETWORK = 0
 
 # `opcode` values
 class Op:
@@ -118,7 +120,7 @@ class Plumbing:
 	SIZE_LIST_RESPONSE_RE = r'-?[0-9]+'
 	LIST_RESPONSE_RE = TYPE_LIST_RESPONSE_RE + NAME_LIST_RESPONSE_RE + r'\t' + SIZE_LIST_RESPONSE_RE + r'\0'
 
-	def __init__(self, connection: MavlinkConnection):
+	def __init__(self, connection):
 		self.connection = connection
 		self.seq = 0
 
@@ -133,14 +135,9 @@ class Plumbing:
 
 		return wrapper
 
-	@property
-	def target_network(self):
-		return 0
-
 	def send(self, payload):
 		payload.seq = self.seq
-		self.connection.connection.file_transfer_protocol_send(self.target_network, self.connection.target_system,
-			self.connection.target_component)
+		self.connection.file_transfer_protocol_send(TARGET_NETWORK, SYSID, COMPID, payload.pack())
 
 	def receive(self):
 		"""
@@ -148,7 +145,7 @@ class Plumbing:
 		"""
 		msg = self.connection.recv_match(type="FILE_TRANSFER_PROTOCOL",
 			condition=f"FILE_TRANSFER_PROTOCOL.seq=={self.seq}", blocking=True,
-			timeout=self.connection.recv_timeout_sec)
+			timeout=RECV_TIMEOUT_SEC)
 
 		if not msg:
 			return None
