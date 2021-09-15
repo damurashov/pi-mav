@@ -11,8 +11,14 @@ from generic import Logging
 
 TARGET_NETWORK = 0
 
+
 # `opcode` values
 class Op:
+	@staticmethod
+	def to_string(val):
+		rev_dict = dict((v, k) for k, v in Op.__dict__.items() if type(v) is int)
+		return rev_dict[val]
+
 	NONE = 0
 	TERMINATE_SESSION = 1
 	RESET_SESSIONS = 2
@@ -32,8 +38,14 @@ class Op:
 	ACK = 128
 	NAK = 129
 
+
 # Error codes
 class Nak:
+	@staticmethod
+	def to_string(val):
+		rev_dict = dict((v, k) for k, v in Nak.__dict__.items() if type(v) is int)
+		return rev_dict[val]
+
 	NONE = 0
 	FAIL = 1
 	FAIL_ERRNO = 2
