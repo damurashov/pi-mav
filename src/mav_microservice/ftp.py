@@ -269,13 +269,14 @@ class Ftp:
 		return payload.nak, payload.session
 
 	@increase_seq
-	def read_file(self, session, offset):
+	def read_file(self, size, session, offset):
 		"""
+		:param size: Size of the chunk to read
 		:param session: Session ID associated with the requested file
 		:param offset: Offset to read from
 		:return: (NakCode, bytearray), or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.READ_FILE, session=session, offset=offset))
+		self.send(FtpPayload(opcode=Op.READ_FILE, size=size, session=session, offset=offset))
 
 		payload = self.receive_payload()
 
