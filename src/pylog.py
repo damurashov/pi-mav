@@ -5,6 +5,7 @@ class Level:
 	WARNING = 2
 	DEBUG = 3
 
+
 class Log:
 
 	@staticmethod
