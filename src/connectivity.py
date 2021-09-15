@@ -5,33 +5,13 @@ import sys
 import threading
 import time
 
-
 _log = pylog.Log()
 _BEGIN_JPEG_PACKAGE_MARKER = b'\xff\xd8'
 _END_JPEG_PACKAGE_MARKER = b'\xff\xd9'
 
-
-class MavlinkConnectionInfo:
-
-	@property
-	def target_system(self):
-		return 0
-
-	@property
-	def target_component(self):
-		return 0
-
-	@property
-	def recv_timeout_sec(self):
-		return 1
-
-	@property
-	def connection(self):
-		"""
-		Returns an instance of MAVLink connection. "None" effectively denotes an error. It either means that (1) no
-		connection could be established, or (2) that the socket hasn't been initialized by the moment
-		"""
-		raise NotImplemented
+SYSID = 0
+COMPID = 0
+RECV_TIMEOUT_SEC = 1
 
 
 class Esp32Camera:
@@ -85,9 +65,10 @@ class Esp32Camera:
 			_log.error([__file__, Esp32Camera, "receive_frame"], "Caught exception socket.error", message=str(exc))
 
 
-class _MavlinkHeartbeat(threading.Thread):
+class MavlinkHeartbeat(threading.Thread):
 	"""
-	Encapsulates HEARTBEAT-related functionality including different threading facilities.
+	Encapsulates HEARTBEAT-related functionality including various threading facilities. It also can be used to check
+	connection
 	"""
 
 	HEARTBEAT_SEND_PERIOD_SECONDS = 1
@@ -120,52 +101,32 @@ class _MavlinkHeartbeat(threading.Thread):
 			return self._try_receive(timeout=timeout)
 		else:
 			if self._last_received is None:
-				time.sleep(_MavlinkHeartbeat.RECEIVE_PERIOD_SECONDS)
+				time.sleep(MavlinkHeartbeat.RECEIVE_PERIOD_SECONDS)
 
 			if self._last_received is None:
 				return False
 
-			return time.time() - self._last_received < _MavlinkHeartbeat.RECEIVE_PERIOD_SECONDS
+			return time.time() - self._last_received < MavlinkHeartbeat.RECEIVE_PERIOD_SECONDS
 
 	def _task(self):
 		self._send()
 		self._try_receive()
-		time.sleep(_MavlinkHeartbeat.HEARTBEAT_SEND_PERIOD_SECONDS)
+		time.sleep(MavlinkHeartbeat.HEARTBEAT_SEND_PERIOD_SECONDS)
 
-	def __init__(self, mavlink_socket):
+	def __init__(self, mavlink_connection):
 		threading.Thread.__init__(self, target=self._task)
-		self._mavlink_connection = mavlink_socket
+		self._mavlink_connection = mavlink_connection
 		self._last_received = None
 
 
-class PioneerUdpMavlinkConnection(MavlinkConnectionInfo):
+class MavlinkConnection:
 
-	TARGET_IP = '192.168.4.1'
-	TARGET_UDP_PORT = 8001
+	PROFILE_UDP = 0
 
-	def check_active(self) -> bool:
-		"""
-		:return: True, if manages to receive a message from the target in less than "ACTIVE_RECEIVE_PERIOD_SECONDS".
-		         False otherwise
-		"""
-		if self.connection is None:
-			return False
+	@staticmethod
+	def build_connection(profile):
+		if profile == MavlinkConnection.PROFILE_UDP:
+			target_ip = '192.168.4.1'
+			target_udp_port = 8001
 
-		return self._heartbeat.check_connection()
-
-	def connection(self):
-		return self._mavlink_connection
-
-	def __init__(self, maintain_heartbeat=False):
-		"""
-		:param maintain_heartbeat: If no messages were sent to the target within the last 5 seconds, the target stops
-		sending any packages to the client. Effectively, to maintain a connection, any message will do. We follow the
-		standard and use HEARTBEAT. The functionality is encapsulated in _MavlinkHeartbeat
-		"""
-		MavlinkConnectionInfo.__init__(self)
-		self._mavlink_connection = mavutil.mavlink_connection('udpout:%s:%s' %
-			(PioneerUdpMavlinkConnection.TARGET_IP, PioneerUdpMavlinkConnection.TARGET_UDP_PORT,))
-		self._heartbeat = _MavlinkHeartbeat(self._mavlink_connection)
-
-		if maintain_heartbeat:
-			self._heartbeat.start()
+			return mavutil.mavlink_connection('udpout:%s:%s' % (target_ip, target_udp_port,))
