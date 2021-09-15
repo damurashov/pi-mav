@@ -14,10 +14,12 @@ if __name__ == "__main__":
 
 	nak = ftp.Nak.NONE
 	offset = 0
-	file_path = '/dev'
+	file_path = '/'
 	dir_list = []
 
 	while nak == ftp.Nak.NONE:
+		Logging.get_logger().debug(Logging.format(__file__, "offset:", offset))
+
 		res = mic_ftp.list_directory(offset, file_path)
 
 		if res is None:
@@ -27,6 +29,8 @@ if __name__ == "__main__":
 		nak, ret_dir_list = res
 		dir_list += ret_dir_list
 		offset += len(ret_dir_list)
+
+		Logging.get_logger().debug(Logging.format(__file__, "nak", ftp.Nak.to_string(nak)))
 
 	print(dir_list)
 	print(nak)
