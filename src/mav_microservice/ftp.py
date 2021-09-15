@@ -143,7 +143,7 @@ def increase_seq(func):
 	return wrapper
 
 
-class Plumbing:
+class Ftp:
 	"""
 	Wraps communication with the device over FTP sub-protocol.
 	"""
@@ -172,7 +172,7 @@ class Plumbing:
 		msg = self.connection.recv_match(type="FILE_TRANSFER_PROTOCOL", blocking=True, timeout=RECV_TIMEOUT_SEC)
 
 		if not msg:
-			Logging.get_logger().info(Logging.format(__file__, Plumbing, Plumbing.receive, "failed to receive", topics=['Conn']))
+			Logging.get_logger().info(Logging.format(__file__, Ftp, Ftp.receive, "failed to receive", topics=['Conn']))
 			return None
 
 		return msg
@@ -188,7 +188,7 @@ class Plumbing:
 
 		payload = FtpPayload.construct_from_bytes(msg.get_payload())
 
-		Logging.get_logger().debug(Logging.format(__file__, Plumbing, Plumbing.receive_payload,
+		Logging.get_logger().debug(Logging.format(__file__, Ftp, Ftp.receive_payload,
 			"Got payload:", str(payload)))
 
 		return payload
@@ -216,7 +216,7 @@ class Plumbing:
 
 		ret = []
 
-		for m in re.finditer(Plumbing.LIST_RESPONSE_RE, payload.payload.decode('ascii')):
+		for m in re.finditer(Ftp.LIST_RESPONSE_RE, payload.payload.decode('ascii')):
 			type = m.group(1)
 			name = m.group(2)
 			size = int(m.group(3))

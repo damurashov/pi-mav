@@ -10,7 +10,7 @@ from generic import Logging
 
 if __name__ == "__main__":
 	connection = connectivity.MavlinkConnection.build_connection(connectivity.MavlinkConnection.PROFILE_UDP)
-	mic_ftp = ftp.Plumbing(connection)
+	mic_ftp = ftp.Ftp(connection)
 
 	nak = ftp.Nak.NONE
 	offset = 0
