@@ -25,6 +25,17 @@ class Logging:
 
 	@staticmethod
 	def format(*args, **kwargs):
+		"""
+		Formats input data according to the following pattern: "[CONTEXT] TOPICS (if any) | message".
+
+		The context is inferred by detecting the following types of objects:
+		- a string representing Path
+		- type name
+		- callable
+
+		Topics get passed explicitly with `topics=LIST` argument
+		"""
+
 		context = []
 		suffix = []
 
