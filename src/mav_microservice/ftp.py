@@ -136,11 +136,14 @@ class FtpPayload:
 		if self.payload is not None:
 			plen = len(self.payload)
 
-		ret = "OP seq:%u sess:%u opcode:%d req_opcode:%u size:%u bc:%u ofs:%u plen=%u" % (self.seq,
-			self.session, self.opcode, self.req_opcode, self.size, self.burst_complete, self.offset, plen)
+		ret = "OP seq:%u sess:%u opcode:%s req_opcode:%s size:%u bc:%u ofs:%u plen=%u" % (self.seq,
+			self.session, Op.to_string(self.opcode), Op.to_string(self.req_opcode), self.size, self.burst_complete, self.offset, plen)
 
 		if plen > 0:
 			ret += " [%s]" % self.payload[:]
+
+		if self.opcode == Op.NAK and len(self.payload) > 0:
+			ret += Nak.to_string(self.payload[0])
 
 		return ret
 
@@ -172,6 +175,9 @@ class Ftp:
 
 	def send(self, payload):
 		payload.seq = self.seq
+
+		Logging.get_logger().debug(Logging.format(__file__, Ftp, Ftp.receive_payload, "Sending payload: ", str(payload)))
+
 		self.connection.mav.file_transfer_protocol_send(TARGET_NETWORK, SYSID, COMPID, payload.pack())
 
 	def receive(self):
@@ -202,7 +208,7 @@ class Ftp:
 		payload = FtpPayload.construct_from_bytes(msg.get_payload())
 
 		Logging.get_logger().debug(Logging.format(__file__, Ftp, Ftp.receive_payload,
-			"Got payload:", str(payload)))
+			"Received payload:", str(payload)))
 
 		return payload
 
