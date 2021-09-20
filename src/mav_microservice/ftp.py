@@ -57,7 +57,7 @@ class Nak(Exception):
 			raise Nak(nak)
 
 	def __init__(self, nak):
-		Exception.__init__(Nak.to_string(nak))
+		Exception.__init__(self, Nak.to_string(nak))
 
 	NONE = 0
 	FAIL = 1
