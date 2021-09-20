@@ -176,7 +176,7 @@ class Ftp:
 	def send(self, payload):
 		payload.seq = self.seq
 
-		Logging.get_logger().debug(Logging.format(__file__, Ftp, Ftp.receive_payload, "Sending payload: ", str(payload)))
+		Logging.get_logger().debug(Logging.format(__file__, Ftp, Ftp.send, "Sending payload: ", str(payload)))
 
 		self.connection.mav.file_transfer_protocol_send(TARGET_NETWORK, SYSID, COMPID, payload.pack())
 
