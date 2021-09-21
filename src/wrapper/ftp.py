@@ -123,3 +123,6 @@ class Ftp:
 			read_offset += len(file_list)
 
 		return file_list
+
+	def reset_sessions(self):
+		nak = self._try_receive(self.ftp.reset_sessions)
