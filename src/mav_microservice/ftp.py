@@ -46,9 +46,9 @@ class Nak(Exception):
 	def to_string(nak):
 		rev_dict = dict((v, k) for k, v in Nak.__dict__.items() if type(v) is int)
 		try:
-			return rev_dict[nak]
+			return f'{rev_dict[nak]} ({nak})'
 		except KeyError:
-			return "unknown: %d" % nak
+			return f"unknown error code ({nak})"
 
 	@staticmethod
 	def try_raise(nak):
