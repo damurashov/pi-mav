@@ -45,7 +45,10 @@ class Nak(Exception):
 	@staticmethod
 	def to_string(nak):
 		rev_dict = dict((v, k) for k, v in Nak.__dict__.items() if type(v) is int)
-		return rev_dict[nak]
+		try:
+			return rev_dict[nak]
+		except KeyError:
+			return "unknown: %d" % nak
 
 	@staticmethod
 	def try_raise(nak):
@@ -93,7 +96,10 @@ class FtpPayload:
 		if self.opcode == Op.ACK:
 			return Nak.NONE
 
-		return int(self.payload[0])
+		if len(self.payload) > 0:
+			return int(self.payload[0])
+
+		return Nak.FAIL
 
 	@staticmethod
 	def construct_from_bytes(ftp_payload):
@@ -101,6 +107,7 @@ class FtpPayload:
 			ftp_payload = ftp_payload.get_payload()
 
 		ftp_payload = bytearray(ftp_payload[7:])
+
 		if len(ftp_payload) < FtpPayload.HEADER_LENGTH:
 			ftp_payload.extend(bytearray([0]) * (FtpPayload.HEADER_LENGTH - len(ftp_payload)))
 
@@ -228,8 +235,8 @@ class Ftp:
 			return None
 
 		# Payload is empty
-		if payload.opcode == Op.NAK and int(payload.payload[0]) != Nak.EOF or payload.size == 0:
-			return payload.opcode, []
+		if payload.size == 0:
+			return payload.nak, []
 
 		# Unpack directory entries from payload
 
