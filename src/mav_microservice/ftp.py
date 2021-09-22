@@ -469,7 +469,7 @@ class Ftp:
 		"""
 		NETWORK_BYTE_ORDER = 'big'
 		self.send(FtpPayload(opcode=Op.CALC_FILE_CRC32, size=len(file_path), payload=bytearray(file_path)))
-		payload=self.receive_payload()
+		payload=self.receive_payload()  # TODO: payload calculation may take some time for larger files. Increase the timeout
 
 		if not payload:
 			return None
