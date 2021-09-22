@@ -103,16 +103,12 @@ class FtpPayload:
 
 	@staticmethod
 	def construct_from_bytes(ftp_payload):
-		if type(ftp_payload) is common.MAVLink_file_transfer_protocol_message:
-			ftp_payload = ftp_payload.get_payload()
-
-		ftp_payload = bytearray(ftp_payload[7:])
+		ftp_payload = bytearray(ftp_payload)
 
 		if len(ftp_payload) < FtpPayload.HEADER_LENGTH:
 			ftp_payload.extend(bytearray([0]) * (FtpPayload.HEADER_LENGTH - len(ftp_payload)))
 
 		ret = struct.unpack("<HBBBBBxI", ftp_payload[0 : FtpPayload.HEADER_LENGTH])
-		size_payload = ret[3]
 
 		# Extract ftp payload (data field)
 		ftp_payload = ftp_payload[FtpPayload.HEADER_LENGTH:]
@@ -232,7 +228,7 @@ class Ftp:
 		if not msg:
 			return None
 
-		payload = FtpPayload.construct_from_bytes(msg.get_payload())
+		payload = FtpPayload.construct_from_bytes(msg.payload)
 
 		if payload.seq != self.seq:
 			Logging.get_logger().info(Logging.format(__file__, Ftp, Ftp.receive_payload,
