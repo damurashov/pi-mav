@@ -69,7 +69,8 @@ class Ftp:
 					self._file.close()
 
 			def handle_chunk(self, nak, chunk):
-				mic_ftp.Nak.try_raise(nak)
+				if nak != mic_ftp.Nak.NONE:  # It may be EOF or some other error. Either way, the caller should handle it
+					return
 
 				# Write if dest is not None. Accumulate result otherwise
 				if dest is not None:
@@ -91,6 +92,7 @@ class Ftp:
 		while nak == mic_ftp.Nak.NONE:
 			nak, chunk = self._try_receive(self.ftp.read_file, size=Ftp.CHUNK_SIZE, session=sid,
 				offset=read_state.offset)
+			mic_ftp.Nak.try_raise(nak)
 			read_state.handle_chunk(nak, chunk)
 
 		# Close session
