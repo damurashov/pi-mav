@@ -155,11 +155,26 @@ class FtpPayload:
 		return ret
 
 
+_prev_args = None
+_prev_kwargs = None
+_prev_func = None
+
+
 def increase_seq(func):
 
 	def wrapper(self, *args, **kwargs):
+		global _prev_args
+		global _prev_kwargs
+		global _prev_func
+
+		# If we use the same function with the same parameters, chances are we making a second attempt to connect
+		if not (_prev_args == args and _prev_kwargs == kwargs and _prev_func == func):
+			self.seq = (self.seq + 1) % 65536
+
 		ret = func(self, *args, **kwargs)
-		self.seq += 1
+		_prev_func = func
+		_prev_args = args
+		_prev_kwargs = kwargs
 
 		return ret
 
@@ -213,6 +228,13 @@ class Ftp:
 			return None
 
 		payload = FtpPayload.construct_from_bytes(msg.get_payload())
+
+		if payload.seq != self.seq:
+			Logging.get_logger().info(Logging.format(__file__, Ftp, Ftp.receive_payload,
+				"Got payload, but `seq` fields don't match", "current seq:", self.seq, "received payload:",
+				str(payload), topics=["conn"]))
+
+			return None
 
 		Logging.get_logger().debug(Logging.format(__file__, Ftp, Ftp.receive_payload,
 			"Received payload:", str(payload)))
