@@ -112,6 +112,7 @@ class FtpPayload:
 			ftp_payload.extend(bytearray([0]) * (FtpPayload.HEADER_LENGTH - len(ftp_payload)))
 
 		ret = struct.unpack("<HBBBBBxI", ftp_payload[0 : FtpPayload.HEADER_LENGTH])
+		size_payload = ret[3]
 
 		# Extract ftp payload (data field)
 		ftp_payload = ftp_payload[FtpPayload.HEADER_LENGTH:]
@@ -121,7 +122,11 @@ class FtpPayload:
 		ret = ret + (ftp_payload,)
 		ret = FtpPayload(*ret)
 
-		# print(ret)
+		if ret.size != len(ret.payload):
+			Logging.get_logger().error(Logging.format(__file__, FtpPayload, FtpPayload.construct_from_bytes,
+				"declared payload size and length of the payload don't match.", "Declared size:", ret.size,
+				"The actual payload's length:", len(ret.payload), topics=["serialization"]))
+
 		return ret
 
 	def pack(self):
