@@ -263,7 +263,7 @@ class Ftp:
 		if not payload:
 			return None
 
-		return payload.opcode
+		return payload.nak
 
 	@increase_seq
 	def reset_sessions(self):
