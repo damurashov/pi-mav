@@ -356,7 +356,7 @@ class Ftp:
 		:param content: Payload to write to the file
 		:return: NakCode, or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.WRITE_FILE, size=len(content), payload=bytearray(content)))
+		self.send(FtpPayload(opcode=Op.WRITE_FILE, size=len(content), session=session, payload=bytearray(content)))
 		payload = self.receive_payload()
 
 		if not payload:
