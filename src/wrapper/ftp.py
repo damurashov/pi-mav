@@ -163,10 +163,10 @@ class Ftp:
 		read_offset = 0
 
 		while nak == mic_ftp.Nak.NONE:
-			nak, fl = self._try_receive(self.ftp.list_directory, offset=read_offset, file_path = path)
+			nak, fl = self._try_receive(self.ftp.list_directory, offset=read_offset, file_path=path)
 			file_list += fl
 			mic_ftp.Nak.try_raise(nak)
-			read_offset += len(file_list)
+			read_offset += len(fl)
 
 		return file_list
 
