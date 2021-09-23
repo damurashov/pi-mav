@@ -6,6 +6,7 @@ A wrapper over MAVLink FTP. Encapsulates CRUD-related ops.
 
 import sys
 import pathlib
+import os
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
@@ -23,7 +24,7 @@ class Ftp:
 	# TODO: as for 2021-09-15, Geoscan MAVLink implementation kicks off file or directory creation/removal requests as those make no sense to the Autopilot. Implement relevant methods if and when it stops being the case
 
 	N_RECEIVE_ATTEMPTS = 2
-	CHUNK_SIZE = 200
+	CHUNK_SIZE = 100
 
 	def __init__(self, mavlink_connection):
 		self.ftp = mic_ftp.Ftp(mavlink_connection)
@@ -101,11 +102,56 @@ class Ftp:
 
 	def upload_file(self, src, dest) -> type(mic_ftp.Nak.NONE):
 		"""
-		:param src: client-side path
+		:param src: client-side path of type `str`, or bytes
 		:param dest: server-side path
-		:return: NakCode, on successful connection. Exception otherwise
+		:return: None, on success. Exception otherwise
 		"""
-		pass
+
+		class WriteState:
+			def __init__(self):
+				assert type(src) in [str, bytes, bytearray]
+
+				self._offset = 0
+				src_path = type(src) is str and os.path.isfile(src)
+
+				self._file = open(src, 'rb') if src_path else None
+
+			def __del__(self):
+				if self._file is not None:
+					self._file.close()
+
+			def handle_chunk(self):
+				if self._file is None:
+					next_chunk = src[self._offset : self._offset + Ftp.CHUNK_SIZE]
+				else:
+					next_chunk = self._file.read(Ftp.CHUNK_SIZE)
+
+				off = self._offset
+				self._offset += len(next_chunk)
+
+				return off, next_chunk
+
+		# Get a session id
+
+		nak, sid = self._try_receive(self.ftp.open_file_wo, dest)
+		mic_ftp.Nak.try_raise(nak)
+
+		# Write a file chunk by chunk
+
+		write_state = WriteState()
+		offset, chunk = write_state.handle_chunk()
+
+		while len(chunk):
+			nak = self._try_receive(self.ftp.write_file, sid, offset, chunk)
+			mic_ftp.Nak.try_raise(nak)
+
+			offset, chunk = write_state.handle_chunk()
+
+		# Terminate the session
+
+		nak = self._try_receive(self.ftp.terminate_session, sid)
+		mic_ftp.Nak.try_raise(nak)
+
 
 	def list_directory(self, path) -> None:
 		"""
