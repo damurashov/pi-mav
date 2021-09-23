@@ -349,14 +349,14 @@ class Ftp:
 		return payload.nak, payload.session
 
 	@increase_seq
-	def write_file(self, session, content):
+	def write_file(self, session, offset, content):
 		"""
 
 		:param session: Session ID associated with the requested file
 		:param content: Payload to write to the file
 		:return: NakCode, or None if failed to get a response
 		"""
-		self.send(FtpPayload(opcode=Op.WRITE_FILE, size=len(content), session=session, payload=bytearray(content)))
+		self.send(FtpPayload(opcode=Op.WRITE_FILE, size=len(content), offset=offset, session=session, payload=bytearray(content)))
 		payload = self.receive_payload()
 
 		if not payload:
