@@ -1,5 +1,6 @@
 from command import *
 import time
+from generic import *
 
 
 def _wait_for_ack(seconds=4, do_print=True):
@@ -12,3 +13,6 @@ if __name__ == "__main__":
 
     command_takeoff()
     _wait_for_ack(16)
+
+    set_position_target_local_ned()
+

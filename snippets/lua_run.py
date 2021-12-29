@@ -10,6 +10,6 @@ def _wait_ack():
 
 
 if __name__ == "__main__":
-    command_lua_run(True)
+    command_lua_run(False)
     _wait_ack()
     time.sleep(1)

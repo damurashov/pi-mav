@@ -61,6 +61,10 @@ if __name__ == '__main__':
     # Every control command decreases/increases position
     STEP_XY = 0.2
     STEP_Z = 0.1
+    STEP_Z = 0.1
+    STEP_Z = 0.1
+    STEP_Z = 0.1
+    ddSTEP_Z = 0.1
     STEP_YAW = math.radians(float(45))
 
     pioneer_mini = Control()

@@ -36,7 +36,7 @@ class Stick:
 
 
 def dbg_print_event_info(event: tk.Event):
-	if 1:
+	if 0:
 		return
 
 	info = lambda k: print(f'"{str(k)}" of type {str(type(k))}')

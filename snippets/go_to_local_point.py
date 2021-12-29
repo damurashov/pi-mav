@@ -6,5 +6,6 @@ def _wait_response(seconds=4, do_print=True):
 
 
 if __name__ == "__main__":
+
 	set_position_target_local_ned()
 	_wait_response()

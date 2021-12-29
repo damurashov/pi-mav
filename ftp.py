@@ -35,8 +35,8 @@ ERR_FileExists = 8
 ERR_FileProtected = 9
 ERR_FileNotFound = 10
 
-HDR_Len = 12
-MAX_Payload = 239
+NON_PAYLOAD_FIELDS_LEN = 12
+MAX_PAYLOAD_FIELD_LEN = 239
 
 class FtpPayload:
 	def __init__(self, seq, session, opcode, size, req_opcode, burst_complete, offset, payload):
@@ -72,14 +72,14 @@ class FtpPayload:
 
 	def pack(self):
 		'''pack message'''
-		ret = struct.pack("<HBBBBBBI", self.seq, self.session, self.opcode, self.size, self.req_opcode, self.burst_complete, 0, self.offset)
+		ret = struct.pack("<HBBBBBBI", self.seq, self.session, self.opcode, self.size, self.req_opcode, self.burst_complete, 0, self.offset)  # the "0" stands for padding
+
 		if self.payload is not None:
-			ret += self.payload
-		remainder_length = MAX_Payload - len(ret) + 12
-		if remainder_length > 0:
-			ret += bytearray([0] * remainder_length)
-		ret = bytearray(ret)
-		# print(len(ret))
+			ret += bytearray(self.payload)
+
+		remainder_length = MAX_PAYLOAD_FIELD_LEN - len(ret) + NON_PAYLOAD_FIELDS_LEN
+		ret += bytearray([0] * remainder_length)
+
 		return ret
 
 	def __str__(self):
@@ -87,13 +87,8 @@ class FtpPayload:
 		if self.payload is not None:
 			plen = len(self.payload)
 		ret = "OP seq:%u sess:%u opcode:%d req_opcode:%u size:%u bc:%u ofs:%u plen=%u" % (self.seq,
-																						  self.session,
-																						  self.opcode,
-																						  self.req_opcode,
-																						  self.size,
-																						  self.burst_complete,
-																						  self.offset,
-																						  plen)
+			self.session, self.opcode, self.req_opcode, self.size, self.burst_complete, self.offset, plen)
+
 		if plen > 0:
 			ret += " [%u]" % self.payload[0]
 		return ret
@@ -102,7 +97,7 @@ class FtpPayload:
 
 
 def ftp_list():
-	payload = [0, 0, 0, 3, 2, 9, 0, 0, 0, 0, 0, 0, ord('/'), ord('\0')]
+	payload = [0, 0, 0, 3, 2, 9, 0, 0, 0, 0, 0, 0,] + [ord(c) for c in '/dev/\0']
 	psuffix = [0] * (251 - len(payload))
 	payload += psuffix
 	msg = mav.file_transfer_protocol_encode(0, 0, 0, payload)
@@ -117,11 +112,10 @@ def ftp_list():
 			msgin = mav.parse_char(sock.recv(300))
 			if msgin is not None and msgin.get_msgId() == mavcommon.MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
 				print(msgin)
-				payload = msgin.get_payload()
-				payload = list(payload)
-				payload = [f"{chr(i)}" for i in payload]
+				payload = FtpPayload.construct_from_bytes(msgin.get_payload())
 				print(payload)
-				return
+				print(bytes(msgin.payload[12:]))
+				return payload
 			time.sleep(0.5)
 		except:
 			# print(sys.exc_info()[0])
@@ -154,6 +148,9 @@ def msg_open_file_ro():
 def msg_write_file(sid, offset, chunk):
 	return msg_ftp(FtpPayload(1, int(sid), OP_WriteFile, len(chunk), 0, 1, int(offset), bytearray(chunk)))
 
+
+def payload_write_file(sid, offset, chunk):
+	return FtpPayload(1, int(sid), OP_WriteFile, len(chunk), 0, 1, int(offset), bytearray(chunk))
 
 def msg_read_file():
 	return msg_ftp(FtpPayload(1, 0, OP_ReadFile, 70, 128, 1, 0, bytearray([])))
