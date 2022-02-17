@@ -10,7 +10,6 @@ _END_JPEG_PACKAGE_MARKER = b'\xff\xd9'
 
 SYSID = 0
 COMPID = 0
-RECV_TIMEOUT_SEC = 2
 
 
 class Esp32Camera:
@@ -127,10 +126,46 @@ class MavlinkConnection:
 
 	PROFILE_UDP = 0
 
+	THIS_SYSID = 255
+	THIS_COMPID = 1
+	RECV_TIMEOUT_SEC = 2
+
 	@staticmethod
 	def build_connection(profile):
 		if profile == MavlinkConnection.PROFILE_UDP:
 			target_ip = '192.168.4.1'
 			target_udp_port = 8001
 
-			return mavutil.mavlink_connection('udpout:%s:%s' % (target_ip, target_udp_port,))
+			connection = mavutil.mavlink_connection('udpout:%s:%s' % (target_ip, target_udp_port,),
+				source_system=THIS_SYSID, source_component=THIS_COMPID)
+		connection.target_component = SYSID
+		connection.target_component = COMPID
+
+
+class MavlinkConnectionWrapper:
+
+	def __init__(self,
+		connection,
+		recv_timeout_sec=MavlinkConnection.RECV_TIMEOUT_SEC,
+
+		self.connection = connection
+		self.recv_timeout_sec = recv_timeout_sec
+
+	def wrap_recv_match(self, f_ensure_recv, *args, **kwargs):
+		"""
+		:param f_ensure_recv: Block-wait for response message, raise exception if failed to receive
+		:param args: args for self.connection.recv_match
+		:param kwargs: kwargs for self.connection.recv_match
+		:return: Received message, or None
+		"""
+		timeout = kwargs.pop("timeout", self.recv_timeout_sec)
+		blocking = kwargs.pop("blocking", f_ensure_recv)
+		rcv = self.connection.recv_match(*args, **kwargs, blocking=blocking, timeout=timeout)
+
+		if rcv is None:
+			Logging.warning(__file__, MavlinkConnectionWrapper, f"{kwargs['type']} -- failed to receive")
+
+			if f_ensure_recv is None:
+				raise ConnectionError(f"Could not get response")
+
+		return rcv

@@ -7,8 +7,8 @@ from connectivity import MavlinkConnection
 from wrapper import ftp
 
 
-NAME_DEST_FILE = "./o.bin"
-NAME_SRC_FILE = "/dev/LuaScript/main.lua"
+NAME_DEST_FILE = "./o2.bin"
+NAME_SRC_FILE = "/dev/UavMonitor/firmware.bin"
 
 
 if __name__ == "__main__":

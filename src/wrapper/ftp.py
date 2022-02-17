@@ -1,5 +1,3 @@
-
-
 """
 A wrapper over MAVLink FTP. Encapsulates CRUD-related ops.
 """
@@ -23,7 +21,7 @@ class Ftp:
 
 	# TODO: as for 2021-09-15, Geoscan MAVLink implementation kicks off file or directory creation/removal requests as those make no sense to the Autopilot. Implement relevant methods if and when it stops being the case
 
-	N_RECEIVE_ATTEMPTS = 2
+	N_RECEIVE_ATTEMPTS = 4
 	CHUNK_SIZE = 100
 
 	def __init__(self, mavlink_connection):
