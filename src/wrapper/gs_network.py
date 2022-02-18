@@ -13,7 +13,7 @@ class GsNetwork:
 
 	SUCCESS = geoscan.MAV_GS_NETWORK_ACK_SUCCESS
 	FAIL = geoscan.MAV_GS_NETWORK_ACK_FAIL
-	N_RECEIVE_ATTEMPTS = 3
+	N_RECEIVE_ATTEMPTS = 2
 	PAYLOAD_MAX_LEN = 247
 
 	def __init__(self, mavlink_connection, f_force_response=True):
@@ -26,7 +26,7 @@ class GsNetwork:
 
 	@staticmethod
 	def _match_msgid(msgid, *messages):
-		return all([m.msgid == msgid for m in messages])
+		return all([m.id == msgid for m in messages])
 
 	@staticmethod
 	def _match_attr(a, b, *attributes):
@@ -34,7 +34,7 @@ class GsNetwork:
 
 	@staticmethod
 	def _match_request_response(request, response):
-		if GsNetwork._match_msgid(geoscan.MAV_GS_NETWORK, request, response):
+		if GsNetwork._match_msgid(geoscan.MAVLINK_MSG_ID_MAV_GS_NETWORK, request, response):
 			match_attr = GsNetwork._match_attr(request, response, 'command', 'transport')
 			is_response = response.ack not in [geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE,
 				geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE]
@@ -47,9 +47,9 @@ class GsNetwork:
 		if f_expect_response:
 			for iatt in range(GsNetwork.N_RECEIVE_ATTEMPTS):
 				self.connection.mav.send(msg_request)
-				msg_response = self.connection.recv_match(type="GS_NETWORK",
-					condition=f"GS_NETWORK.ack != {geoscan.MAV_GS_NETWORK_ACK_NONE} and \
-					GS_NETWORK.ack != {geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE}",
+				msg_response = self.connection.recv_match(type="MAV_GS_NETWORK",
+					# condition=f"MAV_GS_NETWORK.ack != {geoscan.MAV_GS_NETWORK_ACK_NONE} and \
+					# MAV_GS_NETWORK.ack != {geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE}",
 					blocking=True,
 					timeout=RECV_TIMEOUT_SEC)
 
@@ -83,7 +83,7 @@ class GsNetwork:
 			extend_bytes_zeros(payload, GsNetwork.PAYLOAD_MAX_LEN))
 		response = self._gs_network_request_response_loop(msg, True)
 
-		return response.port, response.ack
+		return response.host_port, response.ack
 
 	def connect_tcp4(self, remote_endpoint_ip: bytes, remote_endpoint_port, local_port=0):
 		"""
@@ -102,4 +102,4 @@ class GsNetwork:
 			extend_bytes_zeros(remote_endpoint_ip, GsNetwork.PAYLOAD_MAX_LEN))
 		response = self._gs_network_request_response_loop(msg, True)
 
-		return response.port, response.ack
+		return response.host_port, response.ack
