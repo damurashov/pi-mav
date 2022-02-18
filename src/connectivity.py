@@ -3,6 +3,7 @@ import socket
 import sys
 import threading
 import time
+import os
 from generic import Logging
 
 _BEGIN_JPEG_PACKAGE_MARKER = b'\xff\xd8'
@@ -129,8 +130,10 @@ class MavlinkConnection:
 
 	@staticmethod
 	def build_connection(profile):
+		os.environ["MAVLINK20"] = "1"
+
 		if profile == MavlinkConnection.PROFILE_UDP:
 			target_ip = '192.168.4.1'
 			target_udp_port = 8001
 
-			return mavutil.mavlink_connection('udpout:%s:%s' % (target_ip, target_udp_port,))
+			return mavutil.mavlink_connection('udpout:%s:%s' % (target_ip, target_udp_port,), dialect='geoscan')
