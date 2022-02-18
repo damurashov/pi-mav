@@ -106,4 +106,4 @@ def extend_bytes_zeros(b: bytes, required_length):
 	b = b[0:required_length]
 	n_append = required_length - len(b)
 
-	return b + b'0' * n_append
+	return b + bytes([0]) * n_append
