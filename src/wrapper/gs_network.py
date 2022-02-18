@@ -13,7 +13,7 @@ class GsNetwork:
 
 	SUCCESS = geoscan.MAV_GS_NETWORK_ACK_SUCCESS
 	FAIL = geoscan.MAV_GS_NETWORK_ACK_FAIL
-	N_RECEIVE_ATTEMPTS = 2
+	N_RECEIVE_ATTEMPTS = 3
 	PAYLOAD_MAX_LEN = 247
 
 	def __init__(self, mavlink_connection, f_force_response=True):
@@ -86,6 +86,12 @@ class GsNetwork:
 		return response.port, response.ack
 
 	def connect_tcp4(self, remote_endpoint_ip: bytes, remote_endpoint_port, local_port=0):
+		"""
+		Made a recipient connect to a remote TCP endpoint
+
+		:param local_port: The recepient's port
+		:return: (PORT, ACK). PORT is the port number assigned
+		"""
 		payload_len = 4
 		msg = self.connection.mav.mav_gs_network_encode(geoscan.MAV_GS_NETWORK_COMMAND_CONNECT,
 			self.ack_none_default,
