@@ -100,3 +100,10 @@ def uptime_sec():
 
 def uptime_ms():
 	return int((time.time() - START_TIME) * 1000)
+
+
+def extend_bytes_zeros(b: bytes, required_length):
+	b = b[0:required_length]
+	n_append = required_length - len(b)
+
+	return b + b'0' * n_append
