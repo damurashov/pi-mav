@@ -2,6 +2,7 @@ import logging
 import pathlib
 import os
 import inspect
+import time
 
 class Logging:
 
@@ -22,6 +23,22 @@ class Logging:
 			Logging._logger.addHandler(sh)
 
 		return Logging._logger
+
+	@staticmethod
+	def info(*args, **kwargs):
+		return Logging.get_logger().info(Logging.format(*args, **kwargs))
+
+	@staticmethod
+	def warning(*args, **kwargs):
+		return Logging.get_logger().warning(Logging.format(*args, **kwargs))
+
+	@staticmethod
+	def error(*args, **kwargs):
+		return Logging.get_logger().error(Logging.format(*args, **kwargs))
+
+	@staticmethod
+	def critical(*args, **kwargs):
+		return Logging.get_logger().critical(Logging.format(*args, **kwargs))
 
 	@staticmethod
 	def format(*args, **kwargs):
@@ -72,3 +89,21 @@ class Logging:
 			topics = ' ' + ', '.join(topics) + ' | '
 
 		return '[' + ' : '.join(context) + ']' + topics + ' '.join(suffix)
+
+
+START_TIME = time.time()
+
+
+def uptime_sec():
+	return int(time.time() - START_TIME)
+
+
+def uptime_ms():
+	return int((time.time() - START_TIME) * 1000)
+
+
+def extend_bytes_zeros(b: bytes, required_length):
+	b = b[0:required_length]
+	n_append = required_length - len(b)
+
+	return b + b'0' * n_append
