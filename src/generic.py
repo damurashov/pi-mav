@@ -107,3 +107,10 @@ def extend_bytes_zeros(b: bytes, required_length):
 	n_append = required_length - len(b)
 
 	return b + bytes([0]) * n_append
+
+
+def try_unpack_fields(obj, *fields):
+	if obj is None:
+		return None
+	else:
+		return (getattr(obj, f) for f in fields)
