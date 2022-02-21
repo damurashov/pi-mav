@@ -176,13 +176,14 @@ class GsNetwork:
 
 	def send_tcp(self, payload: bytes, remote_endpoint_ip: bytes, remote_endpoint_port, local_port):
 		payload_len, transport = GsNetwork._parse_ip(remote_endpoint_ip, "tcp")
+		payload_len += len(payload)
 		msg = self.connection.mav.mav_gs_network_encode(geoscan.MAV_GS_NETWORK_COMMAND_SEND,
 			self.ack_none_default,
 			transport,
 			local_port,
 			remote_endpoint_port,
 			payload_len,
-			extend_bytes_zeros(payload, GsNetwork.PAYLOAD_MAX_LEN)
+			extend_bytes_zeros(remote_endpoint_ip + payload, GsNetwork.PAYLOAD_MAX_LEN)
 		)
 		response = self._gs_network_request_response_loop(msg)
 
@@ -190,13 +191,14 @@ class GsNetwork:
 
 	def send_udp(self, payload: bytes, remote_endpoint_ip: bytes, remote_endpoint_port, local_port=0):
 		payload_len, transport = GsNetwork._parse_ip(remote_endpoint_ip, "udp")
+		payload_len += len(payload)
 		msg = self.connection.mav.mav_gs_network_encode(geoscan.MAV_GS_NETWORK_COMMAND_SEND,
 			self.ack_none_default,
 			transport,
 			local_port,
 			remote_endpoint_port,
 			payload_len,
-			extend_bytes_zeros(payload, GsNetwork.PAYLOAD_MAX_LEN)
+			extend_bytes_zeros(remote_endpoint_ip + payload, GsNetwork.PAYLOAD_MAX_LEN)
 		)
 		response = self._gs_network_request_response_loop(msg)
 
@@ -224,9 +226,8 @@ class GsNetwork:
 
 	def disconnect_tcp(self, remote_endpoint_ip: bytes, remote_endpoint_port, local_port):
 		"""
-
 		:param remote_endpoint_ip:   Ip of the remote point a request processor is connected to (IP version is
-		                             automatically derived from its length
+		                             automatically derived from its length)
 		:param remote_endpoint_port:
 		:param local_port:
 		:return:
