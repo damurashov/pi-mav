@@ -7,7 +7,7 @@ from connectivity import RECV_TIMEOUT_SEC
 from generic import Logging, extend_bytes_zeros, try_unpack_fields
 from pymavlink.dialects.v20 import geoscan
 from pymavlink import mavutil
-
+import time
 
 class GsNetwork:
 
@@ -243,3 +243,37 @@ class GsNetwork:
 		response = self._gs_network_request_response_loop(msg)
 
 		return try_unpack_fields(response, "ack")
+
+	def wait_process_received(self, timeout=RECV_TIMEOUT_SEC):
+		time_end = time.time() + timeout
+		msg_response = self.connection.recv_match(type="MAV_GS_NETWORK", blocking=True, timeout=timeout)
+		err_message = f"Could not get a response in {timeout} seconds"
+
+		if msg_response is None:
+			raise ConnectionError(err_message)
+		else:  # Kick off response messages, or those whose `command` field does not match the requested one
+			f_ack = msg_response.ack in [geoscan.MAV_GS_NETWORK_ACK_NONE,
+				geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE]
+			f_process_received = msg_response.command == geoscan.MAV_GS_NETWORK_COMMAND_PROCESS_RECEIVED
+
+			if not f_ack or not f_process_received:
+				if time_end <= time.time():
+					raise ConnectionError(err_message)
+				else:
+					return self.wait_process_received(time_end - time.time())
+
+		# Parse ip
+
+		transport_map = {
+			geoscan.MAV_GS_NETWORK_TRANSPORT_TCP4: ("tcp", 4),
+			geoscan.MAV_GS_NETWORK_TRANSPORT_TCP6: ("tcp", 16),
+			geoscan.MAV_GS_NETWORK_TRANSPORT_UDP4: ("udp", 4),
+			geoscan.MAV_GS_NETWORK_TRANSPORT_UDP6: ("udp", 16),
+		}
+		proto, ip_len = transport_map[msg_response.transport]
+		payload_len = msg_response.payload_len - ip_len
+		payload_full = extend_bytes_zeros(bytes(msg_response.payload), GsNetwork.PAYLOAD_MAX_LEN)  # Leading zeros may be truncated
+		ip = payload_full[:ip_len]
+		payload = payload_full[ip_len:ip_len + payload_len]
+
+		return proto, ip, payload
