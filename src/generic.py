@@ -37,6 +37,10 @@ class Logging:
 		return Logging.get_logger().error(Logging.format(*args, **kwargs))
 
 	@staticmethod
+	def debug(*args, **kwargs):
+		return Logging.get_logger().debug(Logging.format(*args, **kwargs))
+
+	@staticmethod
 	def critical(*args, **kwargs):
 		return Logging.get_logger().critical(Logging.format(*args, **kwargs))
 
