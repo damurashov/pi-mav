@@ -13,7 +13,7 @@ class GsNetwork:
 
 	SUCCESS = geoscan.MAV_GS_NETWORK_ACK_SUCCESS
 	FAIL = geoscan.MAV_GS_NETWORK_ACK_FAIL
-	N_RECEIVE_ATTEMPTS = 2
+	N_RECEIVE_ATTEMPTS = 6
 	PAYLOAD_MAX_LEN = 247
 
 	def __init__(self, mavlink_connection, f_force_response=True):
@@ -36,10 +36,13 @@ class GsNetwork:
 
 	@staticmethod
 	def _match_request_response(request, response):
-		if GsNetwork._match_msgid(geoscan.MAVLINK_MSG_ID_MAV_GS_NETWORK, request, response):
+		if geoscan.MAVLINK_MSG_ID_MAV_GS_NETWORK == request.id:
 			match_attr = GsNetwork._match_attr(request, response, 'command', 'transport')
 			is_response = response.ack not in [geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE,
 				geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE]
+
+			Logging.debug(GsNetwork._match_request_response, "request", request, "response", response, "match_attr",
+				match_attr, "is_response", is_response)
 
 			return match_attr and is_response
 		else:
@@ -271,6 +274,62 @@ class GsNetwork:
 			geoscan.MAV_GS_NETWORK_TRANSPORT_UDP6: ("udp", 16),
 		}
 		proto, ip_len = transport_map[msg_response.transport]
+		payload_len = msg_response.payload_len - ip_len
+		payload_full = extend_bytes_zeros(bytes(msg_response.payload), GsNetwork.PAYLOAD_MAX_LEN)  # Leading zeros may be truncated
+		ip = payload_full[:ip_len]
+		payload = payload_full[ip_len:ip_len + payload_len]
+
+		return proto, ip, payload
+
+	def wait_command(self, command, timeout, expect_ip=True):
+		"""
+		:param command:
+		:param timeout:
+		:param expect_ip: If true, IP address will be decoded from `payload` field
+		:return:
+		"""
+		Logging.debug(GsNetwork.wait_command, "timeout:", timeout)
+		assert command in [
+			geoscan.MAV_GS_NETWORK_COMMAND_OPEN,
+			geoscan.MAV_GS_NETWORK_COMMAND_CLOSE,
+			geoscan.MAV_GS_NETWORK_COMMAND_PROCESS_RECEIVED,
+			geoscan.MAV_GS_NETWORK_COMMAND_PROCESS_CONNECTED,
+			geoscan.MAV_GS_NETWORK_COMMAND_PROCESS_CONNECTION_ABORTED,
+			geoscan.MAV_GS_NETWORK_COMMAND_CONNECT,
+			geoscan.MAV_GS_NETWORK_COMMAND_DISCONNECT,
+		]
+
+		time_end = time.time() + timeout
+		msg_response = self.connection.recv_match(type="MAV_GS_NETWORK", blocking=True, timeout=timeout)
+		err_message = f"Could not get a response in {timeout} seconds"
+
+		if msg_response is None:
+			raise ConnectionError(err_message)
+		else:  # Kick off response messages, or those whose `command` field does not match the requested one
+			f_ack = msg_response.ack in [geoscan.MAV_GS_NETWORK_ACK_NONE,
+				geoscan.MAV_GS_NETWORK_ACK_NONE_HOLD_RESPONSE]
+			f_command = msg_response.command == command
+			Logging.debug(GsNetwork.wait_command, "f_ack", f_ack, "f_command", f_command)
+
+			if not f_ack or not f_command:
+				if time_end <= time.time():
+					raise ConnectionError(err_message)
+				else:
+					return self.wait_process_received(time_end - time.time())
+
+		# Parse ip
+
+		transport_map = {
+			geoscan.MAV_GS_NETWORK_TRANSPORT_TCP4: ("tcp", 4),
+			geoscan.MAV_GS_NETWORK_TRANSPORT_TCP6: ("tcp", 16),
+			geoscan.MAV_GS_NETWORK_TRANSPORT_UDP4: ("udp", 4),
+			geoscan.MAV_GS_NETWORK_TRANSPORT_UDP6: ("udp", 16),
+		}
+		proto, ip_len = transport_map[msg_response.transport]
+
+		if not expect_ip:
+			ip_len = 0
+
 		payload_len = msg_response.payload_len - ip_len
 		payload_full = extend_bytes_zeros(bytes(msg_response.payload), GsNetwork.PAYLOAD_MAX_LEN)  # Leading zeros may be truncated
 		ip = payload_full[:ip_len]
