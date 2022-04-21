@@ -79,10 +79,20 @@ def get_connected_disconnected(gs_network):
 	gs_network.close_tcp4(8989)
 
 
+def receive_all(gs_network):
+	timeout = 3000
+	gs_network.open_udp4(8001)
+	while True:
+		msg_response = gs_network.connection.recv_match(type="MAV_GS_NETWORK",
+			blocking=True,
+			timeout=timeout)
+		print(msg_response)
+
+
 if __name__ == "__main__":
 	connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
 	gs_network = gsnet.GsNetwork(connection, FORCE_RESPONSE)
-	switch = 5
+	switch = 0
 
 	{
 		0: open_close_tcp,
@@ -91,4 +101,5 @@ if __name__ == "__main__":
 		3: send_udp,
 		4: get_process_received,
 		5: get_connected_disconnected,
+		6: receive_all,
 	}[switch](gs_network)
