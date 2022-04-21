@@ -20,8 +20,6 @@ class Camera:
 		:return: Heartbeat message
 		"""
 
-		self.mavlink_connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS,
-			mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
 		heartbeat = self.mavlink_connection.recv_match(type="HEARTBEAT", condition="HEARTBEAT.type==30", blocking=block,
 			timeout=timeout_seconds)  # MAV_TYPE_CAMERA = 30
 
