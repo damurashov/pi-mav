@@ -16,6 +16,11 @@ if __name__ == "__main__":
 	mavlink_camera = camera.Camera(connection)
 	heartbeat = mavlink_camera.wait_camera_heartbeat()
 	print(heartbeat)
+
 	mavlink_camera.send_request_message_camera_information()
 	camera_information = mavlink_camera.wait_camera_information()
 	print(camera_information)
+
+	mavlink_camera.send_cmd_image_start_capture_once()
+	msg_camera_image_captured = mavlink_camera.wait_camera_image_captured()
+	print(msg_camera_image_captured)

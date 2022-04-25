@@ -57,7 +57,7 @@ class Camera:
 		sequence_number = 0
 		message_start_capture = self.mavlink_connection.mav.command_long_encode(1, 100,
 			common.MAV_CMD_IMAGE_START_CAPTURE, 0, 0, interval, total_images, sequence_number, float('nan'), float('nan'),
-			float('nan'), float('nan'))
+			float('nan'))
 		self.mavlink_connection.mav.send(message_start_capture)
 
 	def wait_camera_image_captured(self, block=True, timeout_seconds=None):
