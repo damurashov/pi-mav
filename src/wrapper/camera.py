@@ -16,6 +16,7 @@ class Camera:
 	def wait_camera_heartbeat(self, block=True, timeout_seconds=None):
 		"""
 		Wait for heartbeat from some remote camera.
+		:param block: Blocking call
 		:param timeout_seconds: If 0, perform blocking wait
 		:return: Heartbeat message
 		"""
@@ -26,7 +27,7 @@ class Camera:
 		return heartbeat
 
 	def send_request_message_camera_information(self):
-		message_request = self.mavlink_connection.mav.mav_command_long_encode(common.MAV_CMD_REQUEST_MESSAGE, 0,
+		message_request = self.mavlink_connection.mav.command_long_encode(1, 100, common.MAV_CMD_REQUEST_MESSAGE, 0,
 			common.MAVLINK_MSG_ID_CAMERA_INFORMATION, 0, 0, 0, 0, 0, 0)
 		self.mavlink_connection.mav.send(message_request)
 
