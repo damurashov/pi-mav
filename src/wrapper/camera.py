@@ -70,3 +70,5 @@ class Camera:
 			elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
 				if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_IMAGE_START_CAPTURE:  # On our message request, we've received a response telling us that the request cannot be fullfilled
 					break
+
+		return message
