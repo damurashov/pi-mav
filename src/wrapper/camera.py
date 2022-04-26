@@ -61,8 +61,16 @@ class Camera:
 			float('nan'))
 		self.mavlink_connection.mav.send(message_start_capture)
 
-	def wait_camera_image_captured(self, block=True, timeout_seconds=None):
+	def wait_camera_image_captured(self, block=True, timeout_seconds=None, image_index=None):
+		"""
+		:param block:
+		:param timeout_seconds:
+		:param image_index:     Acc. to the protocol, each message is identified by its index. It may be specified
+		                        explicitly to retreive a missing capture report from the UAV
+		:return:
+		"""
 		for i in range(3):
+			message = None
 			message = self.mavlink_connection.recv_match(type=["COMMAND_ACK", "CAMERA_IMAGE_CAPTURED"],
 				blocking=block, timeout=timeout_seconds)
 
@@ -72,6 +80,8 @@ class Camera:
 				elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
 					if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_IMAGE_START_CAPTURE:  # On our message request, we've received a response telling us that the request cannot be fullfilled
 						break
+			elif image_index is not None:
+				self.send_request_camera_image_captured(image_index)
 
 		return message
 
