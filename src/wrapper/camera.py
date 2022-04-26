@@ -65,7 +65,7 @@ class Camera:
 			message = self.mavlink_connection.recv_match(type=["COMMAND_ACK", "CAMERA_IMAGE_CAPTURED"],
 				blocking=block, timeout=timeout_seconds)
 
-			if message.id == common.MAV_CMD_IMAGE_START_CAPTURE:
+			if message.id == common.MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED:
 				break
 			elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
 				if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_IMAGE_START_CAPTURE:  # On our message request, we've received a response telling us that the request cannot be fullfilled
