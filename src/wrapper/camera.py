@@ -89,3 +89,23 @@ class Camera:
 		message_request_camera_image_captured = self.mavlink_connection.mav.command_long_encode(1, 100,
 			common.MAV_CMD_REQUEST_MESSAGE, 0, common.MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED, image_index, 0, 0, 0, 0, 0)
 		self.mavlink_connection.mav.send(message_request_camera_image_captured)
+
+	def send_request_camera_capture_status(self):
+		message_request_camera_capture_status = self.mavlink_connection.mav.command_long_encode(1, 100,
+			common.MAV_CMD_REQUEST_MESSAGE, 0, common.MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, 0, 0, 0, 0, 0, 0)
+		self.mavlink_connection.mav.send(message_request_camera_capture_status)
+
+	def wait_camera_capture_status(self, block=True, timeout_seconds=None):
+		for i in range(3):
+			message = None
+			message = self.mavlink_connection.recv_match(type="CAMERA_CAPTURE_STATUS", blocking=block,
+				timeout=timeout_seconds)
+
+			if message:
+				if message.id == common.MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS:
+					break
+				elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
+					if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_REQUEST_MESSAGE:
+						break
+
+		return message
