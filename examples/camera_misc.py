@@ -30,5 +30,16 @@ if __name__ == "__main__":
 	print(camera_information)
 
 	mavlink_camera.send_cmd_image_start_capture_once()
-	msg_camera_image_captured = mavlink_camera.wait_camera_image_captured()
+	msg_camera_image_captured = mavlink_camera.wait_camera_image_captured(timeout_seconds=1)
+	print(msg_camera_image_captured)
+
+	if msg_camera_image_captured is not None:
+		existing_index =  msg_camera_image_captured.image_index
+
+	mavlink_camera.send_request_camera_image_captured(image_index=9999)  # Most likely, this is a nonexistent image index, expect a failure
+	msg_camera_image_captured = mavlink_camera.wait_camera_image_captured(timeout_seconds=1)
+	print(msg_camera_image_captured)
+
+	mavlink_camera.send_request_camera_image_captured(image_index=existing_index)
+	msg_camera_image_captured = mavlink_camera.wait_camera_image_captured(timeout_seconds=1)
 	print(msg_camera_image_captured)
