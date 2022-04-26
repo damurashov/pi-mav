@@ -63,8 +63,6 @@ def main():
 
 	# Request capture status
 	mavlink_camera.send_request_camera_capture_status()
-	# run_print_recv_anything(connection)
-
 	msg_camera_capture_status = mavlink_camera.wait_camera_capture_status(timeout_seconds=1)
 	print(msg_camera_capture_status)
 
