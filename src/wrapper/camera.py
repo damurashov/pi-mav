@@ -78,7 +78,7 @@ class Camera:
 				if message.id == common.MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED:
 					break
 				elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
-					if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_IMAGE_START_CAPTURE:  # On our message request, we've received a response telling us that the request cannot be fullfilled
+					if message.result != common.MAV_RESULT_ACCEPTED and message.command in [common.MAV_CMD_IMAGE_START_CAPTURE, common.MAV_CMD_REQUEST_MESSAGE]:  # On our message request, we've received a response telling us that the request cannot be fullfilled
 						break
 			elif image_index is not None:
 				self.send_request_camera_image_captured(image_index)
