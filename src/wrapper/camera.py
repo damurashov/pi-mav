@@ -89,3 +89,8 @@ class Camera:
 		message_request_camera_image_captured = self.mavlink_connection.mav.command_long_encode(1, 100,
 			common.MAV_CMD_REQUEST_MESSAGE, 0, common.MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED, image_index, 0, 0, 0, 0, 0)
 		self.mavlink_connection.mav.send(message_request_camera_image_captured)
+
+	def send_request_camera_capture_status(self):
+		message_request_camera_capture_status = self.mavlink_connection.mav.command_long_encode(1, 100,
+			common.MAV_CMD_REQUEST_MESSAGE, 0, common.MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, 0, 0, 0, 0, 0, 0)
+		self.mavlink_connection.mav.send(message_request_camera_capture_status)
