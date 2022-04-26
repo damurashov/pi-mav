@@ -43,11 +43,12 @@ class Camera:
 			message = self.mavlink_connection.recv_match(type=["COMMAND_ACK", "CAMERA_INFORMATION"],
 				blocking=block, timeout=timeout_seconds)
 
-			if message.id == common.MAVLINK_MSG_ID_CAMERA_INFORMATION:
-				break
-			elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
-				if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_REQUEST_MESSAGE:  # On our message request, we've received a response telling us that the request cannot be fullfilled
+			if message:
+				if message.id == common.MAVLINK_MSG_ID_CAMERA_INFORMATION:
 					break
+				elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
+					if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_REQUEST_MESSAGE:  # On our message request, we've received a response telling us that the request cannot be fullfilled
+						break
 
 		return message
 
@@ -60,15 +61,31 @@ class Camera:
 			float('nan'))
 		self.mavlink_connection.mav.send(message_start_capture)
 
-	def wait_camera_image_captured(self, block=True, timeout_seconds=None):
+	def wait_camera_image_captured(self, block=True, timeout_seconds=None, image_index=None):
+		"""
+		:param block:
+		:param timeout_seconds:
+		:param image_index:     Acc. to the protocol, each message is identified by its index. It may be specified
+		                        explicitly to retreive a missing capture report from the UAV
+		:return:
+		"""
 		for i in range(3):
+			message = None
 			message = self.mavlink_connection.recv_match(type=["COMMAND_ACK", "CAMERA_IMAGE_CAPTURED"],
 				blocking=block, timeout=timeout_seconds)
 
-			if message.id == common.MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED:
-				break
-			elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
-				if message.result != common.MAV_RESULT_ACCEPTED and message.command == common.MAV_CMD_IMAGE_START_CAPTURE:  # On our message request, we've received a response telling us that the request cannot be fullfilled
+			if message:
+				if message.id == common.MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED:
 					break
+				elif message.id == common.MAVLINK_MSG_ID_COMMAND_ACK:
+					if message.result != common.MAV_RESULT_ACCEPTED and message.command in [common.MAV_CMD_IMAGE_START_CAPTURE, common.MAV_CMD_REQUEST_MESSAGE]:  # On our message request, we've received a response telling us that the request cannot be fullfilled
+						break
+			elif image_index is not None:
+				self.send_request_camera_image_captured(image_index)
 
 		return message
+
+	def send_request_camera_image_captured(self, image_index):
+		message_request_camera_image_captured = self.mavlink_connection.mav.command_long_encode(1, 100,
+			common.MAV_CMD_REQUEST_MESSAGE, 0, common.MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED, image_index, 0, 0, 0, 0, 0)
+		self.mavlink_connection.mav.send(message_request_camera_image_captured)
