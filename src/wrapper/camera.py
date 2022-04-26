@@ -98,7 +98,7 @@ class Camera:
 	def wait_camera_capture_status(self, block=True, timeout_seconds=None):
 		for i in range(3):
 			message = None
-			message = self.mavlink_connection.recv_match(type=["CAMERA_CAPTURE_STATUS"], blocking=block,
+			message = self.mavlink_connection.recv_match(type="CAMERA_CAPTURE_STATUS", blocking=block,
 				timeout=timeout_seconds)
 
 			if message:
