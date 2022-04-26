@@ -10,10 +10,18 @@ from generic import Logging
 from pymavlink import mavutil
 
 
+def print_recv_anything(conn):
+	ret = conn.recv_match()
+
+	if ret:
+		print(ret)
+
+
 if __name__ == "__main__":
 	connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
 	connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
 	mavlink_camera = camera.Camera(connection)
+
 	heartbeat = mavlink_camera.wait_camera_heartbeat()
 	print(heartbeat)
 
