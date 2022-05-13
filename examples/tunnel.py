@@ -10,4 +10,4 @@ from wrapper import tunnel
 if __name__ == "__main__":
 	connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
 	tun = tunnel.Tunnel(connection)
-	tun.send(25, b'abcd')
+	tun.send(25, bytes("bcd", encoding='ascii'))
