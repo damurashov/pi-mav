@@ -127,9 +127,10 @@ class MavlinkHeartbeat(threading.Thread):
 class MavlinkConnection:
 
 	PROFILE_UDP = 0
+	PROFILE_SERIAL = 1
 
 	@staticmethod
-	def build_connection(profile):
+	def build_connection(profile, **kwargs):
 		os.environ["MAVLINK20"] = "1"
 
 		if profile == MavlinkConnection.PROFILE_UDP:
@@ -137,3 +138,9 @@ class MavlinkConnection:
 			target_udp_port = 8001
 
 			return mavutil.mavlink_connection('udpout:%s:%s' % (target_ip, target_udp_port,), dialect='geoscan')
+
+		elif profile == MavlinkConnection.PROFILE_SERIAL:
+			baudrate = kwargs.pop("baudrate")
+			serial = kwargs.pop("serial")
+
+			return mavutil.mavlink_connection(device=serial, baud=baudrate)
