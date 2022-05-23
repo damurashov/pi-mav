@@ -28,8 +28,15 @@ def main():
 	types, neither does build any logic upon it, and it is not resilient to message losses. Run it a couple of times,
 	if it worked once - consider it works in all cases.
 	"""
-	connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
-	connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+
+	if 1:
+		connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
+		connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+	else:
+		device_serial = sys.argv[1]
+		baudrate = sys.argv[2]
+		connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_SERIAL, serial=device_serial, baudrate=baudrate)
+
 	mavlink_camera = camera.Camera(connection)
 
 	# Wait for heartbeat from camera component
