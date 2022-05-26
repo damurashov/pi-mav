@@ -18,3 +18,8 @@ if __name__ == "__main__":
 	cmd_nav.arm_disarm_send_arm()
 	print('waiting for response')
 	print(cmd_nav.arm_disarm_ack_recv(2))
+
+	print("sending DISARM")
+	cmd_nav.arm_disarm_send_disarm()
+	print("waiting for response")
+	print(cmd_nav.arm_disarm_ack_recv(2))
