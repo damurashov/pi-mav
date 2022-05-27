@@ -27,10 +27,9 @@ class CmdNav:
 			common.MAV_CMD_COMPONENT_ARM_DISARM, confirmation, arm, 0, 0, 0, 0, 0, 0)
 		self.mavlink_connection.mav.send(msg)
 
-	def _cmd_ack_recv(self, command, timeout_seconds, block):
-		msg = self.mavlink_connection.recv_match(type="COMMAND_ACK", blocking=block, timeout=timeout_seconds,
-			condition=f"COMMAND_ACK.command == {command}")
+	def _cmd_ack_recv(self, timeout_seconds, block):
+		msg = self.mavlink_connection.recv_match(type="COMMAND_ACK", blocking=block, timeout=timeout_seconds)
 		return msg
 
 	def arm_disarm_ack_recv(self, timeout_seconds=1, block=True):
-		return self._cmd_ack_recv(MAV_CMD_COMPONENT_ARM_DISARM, timeout_seconds, block)
+		return self._cmd_ack_recv(timeout_seconds, block)
