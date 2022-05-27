@@ -1,0 +1,24 @@
+import sys
+import pathlib
+from dataclasses import dataclass, field
+from pymavlink.dialects.v20 import common
+from pymavlink import mavutil
+from pymavlink.dialects.v20.common import MAV_CMD_COMPONENT_ARM_DISARM
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "src"))  # We need files from "src/", that's how we access them
+
+from connectivity import MavlinkConnection
+from wrapper.cmd_nav import CmdNav
+
+if __name__ == "__main__":
+	device_serial = sys.argv[1]
+	baudrate = sys.argv[2]
+	connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_SERIAL, serial=device_serial, baudrate=baudrate)
+	confirmation = 0
+	requested_msg_id = common.MAVLINK_MSG_ID_AUTOPILOT_VERSION
+
+	msg = connection.mav.command_long_encode(1, 1, common.MAV_CMD_REQUEST_MESSAGE, confirmation, requested_msg_id, 0, 0, 0, 0, 0, 0)
+	connection.mav.send(msg)
+
+	msg = connection.recv_match(type="AUTOPILOT_VERSION", blocking=True, timeout=2)
+	print(msg)
