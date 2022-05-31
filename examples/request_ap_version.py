@@ -20,8 +20,9 @@ if __name__ == "__main__":
 
 	confirmation = 0
 	requested_msg_id = common.MAVLINK_MSG_ID_AUTOPILOT_VERSION
+	target_component = 1
 
-	msg = connection.mav.command_long_encode(1, 1, common.MAV_CMD_REQUEST_MESSAGE, confirmation, requested_msg_id, 0, 0, 0, 0, 0, 0)
+	msg = connection.mav.command_long_encode(1, target_component, common.MAV_CMD_REQUEST_MESSAGE, confirmation, requested_msg_id, 0, 0, 0, 0, 0, 0)
 	connection.mav.send(msg)
 
 	msg = connection.recv_match(type="AUTOPILOT_VERSION", blocking=True, timeout=2)
