@@ -23,22 +23,10 @@ def run_print_recv_anything(conn):
 		print_recv_anything(conn)
 
 
-def main():
+def camera_identification(mavlink_camera):
 	"""
-	Tests basic image capture-related functionality. Dead-simple testing code, it does not make any checks for return
-	types, neither does build any logic upon it, and it is not resilient to message losses. Run it a couple of times,
-	if it worked once - consider it works in all cases.
+	Not to be confused w/ MAVLink standard camera identification sequence
 	"""
-
-	if 1:
-		connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
-		connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
-	else:
-		device_serial = sys.argv[1]
-		baudrate = sys.argv[2]
-		connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_SERIAL, serial=device_serial, baudrate=baudrate)
-
-	mavlink_camera = camera.Camera(connection)
 
 	# Wait for heartbeat from camera component
 	heartbeat = mavlink_camera.wait_camera_heartbeat()
@@ -49,6 +37,8 @@ def main():
 	camera_information = mavlink_camera.wait_camera_information()
 	print(camera_information)
 
+
+def camera_image_capture(mavlink_camera):
 	# Send capture request
 	mavlink_camera.send_cmd_image_start_capture_once()
 	msg_camera_image_captured = mavlink_camera.wait_camera_image_captured(timeout_seconds=1)
@@ -74,13 +64,37 @@ def main():
 	msg_camera_capture_status = mavlink_camera.wait_camera_capture_status(timeout_seconds=1)
 	print(msg_camera_capture_status)
 
+
+def camera_video_capture(mavlink_camera):
 	mavlink_camera.send_cmd_video_start_capture()
 	print(mavlink_camera.wait_cmd_video_start_capture_ack())
 
-	time.sleep(2)
+	time.sleep(3)
 
 	mavlink_camera.send_cmd_video_stop_capture()
 	print(mavlink_camera.wait_cmd_video_stop_capture_ack())
+
+
+def main():
+	"""
+	Tests basic image capture-related functionality. Dead-simple testing code, it does not make any checks for return
+	types, neither does build any logic upon it, and it is not resilient to message losses. Run it a couple of times,
+	if it worked once - consider it works in all cases.
+	"""
+
+	if 1:
+		connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
+		connection.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+	else:
+		device_serial = sys.argv[1]
+		baudrate = sys.argv[2]
+		connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_SERIAL, serial=device_serial, baudrate=baudrate)
+
+	mavlink_camera = camera.Camera(connection)
+
+	camera_identification(mavlink_camera)
+	camera_image_capture(mavlink_camera)
+	# camera_video_capture(mavlink_camera)
 
 
 if __name__ == "__main__":
