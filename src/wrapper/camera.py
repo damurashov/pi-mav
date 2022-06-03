@@ -61,6 +61,34 @@ class Camera:
 			float('nan'))
 		self.mavlink_connection.mav.send(message_start_capture)
 
+	def send_cmd_video_start_capture(self, stream_id=0, status_sending_period=0):
+		target_system_id = 1
+		target_component_id = 100
+		confirmation = 0
+		message_video_start_capture = self.mavlink_connection.mav.command_long_encode(target_system_id,
+			target_component_id, common.MAV_CMD_VIDEO_START_CAPTURE, confirmation, stream_id, status_sending_period,
+			0, 0, 0, 0, 0)
+		self.mavlink_connection.mav.send(message_video_start_capture)
+
+	def wait_cmd_video_start_capture_ack(self, blocking=True, timeout_sec=1):
+		message = self.mavlink_connection.recv_match(type="COMMAND_ACK",
+			condition=f"COMMAND_ACK.result={common.MAV_CMD_VIDEO_START_CAPTURE}", blocking=blocking,
+			timeout=timeout_sec)
+		return message
+
+	def send_cmd_video_stop_capture(self, stream_id=0):
+		target_system_id = 1
+		target_component_id = 100
+		confirmation = 0
+		message_video_start_capture = self.mavlink_connection.mav.command_long_encode(target_system_id,
+			target_component_id, common.MAV_CMD_VIDEO_STOP_CAPTURE, confirmation, stream_id, 0, 0, 0, 0, 0, 0)
+		self.mavlink_connection.mav.send(message_video_start_capture)
+
+	def wait_cmd_video_stop_capture_ack(self, blocking=True, timeout_sec=1):
+		message = self.mavlink_connection.recv_match(type="COMMAND_ACK",
+			condition=f"COMMAND_ACK.result={common.MAV_CMD_VIDEO_STOP_CAPTURE}", blocking=blocking, timeout=timeout_sec)
+		return message
+
 	def wait_camera_image_captured(self, block=True, timeout_seconds=None, image_index=None):
 		"""
 		:param block:
