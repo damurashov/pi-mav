@@ -1,5 +1,6 @@
 import pathlib
 import sys
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "src"))  # We need files from "src/", that's how we access them
 
@@ -72,6 +73,14 @@ def main():
 	mavlink_camera.send_request_camera_capture_status()
 	msg_camera_capture_status = mavlink_camera.wait_camera_capture_status(timeout_seconds=1)
 	print(msg_camera_capture_status)
+
+	mavlink_camera.send_cmd_video_start_capture()
+	print(mavlink_camera.wait_cmd_video_start_capture_ack())
+
+	time.sleep(2)
+
+	mavlink_camera.send_cmd_video_stop_capture()
+	print(mavlink_camera.wait_cmd_video_stop_capture_ack())
 
 
 if __name__ == "__main__":
