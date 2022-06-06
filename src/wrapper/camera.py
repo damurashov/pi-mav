@@ -71,9 +71,7 @@ class Camera:
 		self.mavlink_connection.mav.send(message_video_start_capture)
 
 	def wait_cmd_video_start_capture_ack(self, blocking=True, timeout_sec=1):
-		message = self.mavlink_connection.recv_match(type="COMMAND_ACK",
-			condition=f"COMMAND_ACK.result={common.MAV_CMD_VIDEO_START_CAPTURE}", blocking=blocking,
-			timeout=timeout_sec)
+		message = self.mavlink_connection.recv_match(type="COMMAND_ACK", blocking=blocking, timeout=timeout_sec)
 		return message
 
 	def send_cmd_video_stop_capture(self, stream_id=0):
@@ -85,8 +83,7 @@ class Camera:
 		self.mavlink_connection.mav.send(message_video_start_capture)
 
 	def wait_cmd_video_stop_capture_ack(self, blocking=True, timeout_sec=1):
-		message = self.mavlink_connection.recv_match(type="COMMAND_ACK",
-			condition=f"COMMAND_ACK.result={common.MAV_CMD_VIDEO_STOP_CAPTURE}", blocking=blocking, timeout=timeout_sec)
+		message = self.mavlink_connection.recv_match(type="COMMAND_ACK", blocking=blocking, timeout=timeout_sec)
 		return message
 
 	def wait_camera_image_captured(self, block=True, timeout_seconds=None, image_index=None):
