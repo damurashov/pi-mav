@@ -15,7 +15,7 @@ class Control:
 	target_system: int = field(default_factory=int)
 	target_component: int = field(default_factory=int)
 
-	def send_set_position_target_local_ned(self=0, x=0, y=0, z=0, vx=0, vy=0, vz=0, ax=0, ay=0, az=0, yaw=0,
+	def send_set_position_target_local_ned(self, x=0, y=0, z=0, vx=0, vy=0, vz=0, ax=0, ay=0, az=0, yaw=0,
 		yaw_rate=0, frame=MAV_FRAME_LOCAL_NED, x_ignore=1, y_ignore=1, z_ignore=1, vx_ignore=1, vy_ignore=1,
 		vz_ignore=1, ax_ignore=1, ay_ignore=1, az_ignore=1, yaw_ignore=1, yaw_rate_ignore=1, force_set=0):
 
