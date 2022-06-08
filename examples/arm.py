@@ -9,9 +9,7 @@ from wrapper.cmd_nav import CmdNav
 
 
 if __name__ == "__main__":
-	device_serial = sys.argv[1]
-	baudrate = sys.argv[2]
-	connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_SERIAL, serial=device_serial, baudrate=baudrate)
+	connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_UDP)
 	cmd_nav = CmdNav(connection, 1, 1)
 
 	print('sending ARM')
@@ -19,7 +17,15 @@ if __name__ == "__main__":
 	print('waiting for response')
 	print(cmd_nav.arm_disarm_ack_recv(2))
 
-	print("sending DISARM")
-	cmd_nav.arm_disarm_send_disarm()
-	print("waiting for response")
-	print(cmd_nav.arm_disarm_ack_recv(2))
+	time.sleep(2)
+
+	print("sending takeoff")
+	cmd_nav.nav_takeoff_send()
+	print('waiting for response')
+	print(cmd_nav.cmd_ack_recv(2))
+
+	# time.sleep(4)
+	# print("sending DISARM")
+	# cmd_nav.arm_disarm_send_disarm()
+	# print("waiting for response")
+	# print(cmd_nav.arm_disarm_ack_recv(2))
