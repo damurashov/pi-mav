@@ -27,9 +27,14 @@ class CmdNav:
 			common.MAV_CMD_COMPONENT_ARM_DISARM, confirmation, arm, 0, 0, 0, 0, 0, 0)
 		self.mavlink_connection.mav.send(msg)
 
-	def _cmd_ack_recv(self, timeout_seconds, block):
+	def nav_takeoff_send(self, confirmation=0):
+		msg = self.mavlink_connection.mav.command_long_encode(self.target_system, self.target_component,
+			common.MAV_CMD_NAV_TAKEOFF, confirmation, 0, 0, 0, 0, 0, 0, 0)
+		self.mavlink_connection.mav.send(msg)
+
+	def cmd_ack_recv(self, timeout_seconds=1, block=True):
 		msg = self.mavlink_connection.recv_match(type="COMMAND_ACK", blocking=block, timeout=timeout_seconds)
 		return msg
 
 	def arm_disarm_ack_recv(self, timeout_seconds=1, block=True):
-		return self._cmd_ack_recv(timeout_seconds, block)
+		return self.cmd_ack_recv(timeout_seconds, block)
