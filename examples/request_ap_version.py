@@ -11,7 +11,7 @@ from connectivity import MavlinkConnection
 from wrapper.cmd_nav import CmdNav
 
 if __name__ == "__main__":
-	if 1:
+	if 0:
 		device_serial = sys.argv[1]
 		baudrate = sys.argv[2]
 		connection = MavlinkConnection.build_connection(MavlinkConnection.PROFILE_SERIAL, serial=device_serial, baudrate=baudrate)
@@ -20,9 +20,10 @@ if __name__ == "__main__":
 
 	confirmation = 0
 	requested_msg_id = common.MAVLINK_MSG_ID_AUTOPILOT_VERSION
+	target_system = 1
 	target_component = 1
 
-	msg = connection.mav.command_long_encode(1, target_component, common.MAV_CMD_REQUEST_MESSAGE, confirmation, requested_msg_id, 0, 0, 0, 0, 0, 0)
+	msg = connection.mav.command_long_encode(target_system, target_component, common.MAV_CMD_REQUEST_MESSAGE, confirmation, requested_msg_id, 0, 0, 0, 0, 0, 0)
 	connection.mav.send(msg)
 
 	msg = connection.recv_match(type="AUTOPILOT_VERSION", blocking=True, timeout=2)
